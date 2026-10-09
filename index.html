@@ -138,8 +138,13 @@
   </footer>
 
   <script>
-    const SUPABASE_URL = "https://hraziqpbpcheyrrjanij.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_JkoJ6pr7LuABPtSdnyQ7Dg_ys0czy-U";
+    /* ====================================================================
+     * [Multi-Site Supabase Dynamic Binding]
+     * Netlify 배포 시 Build Command(sed)에 의해 각 사이트의 
+     * 환경변수(SUPABASE_URL, SUPABASE_ANON_KEY) 값으로 치환되는 영역입니다.
+     * ==================================================================== */
+    const SUPABASE_URL = "__SUPABASE_URL__";
+    const SUPABASE_KEY = "__SUPABASE_ANON_KEY__";
 
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
