@@ -89,3 +89,44 @@ Netlify는 빌드 중 환경변수 내 `SUPABASE_ANON_KEY`나 URL 패턴을 감�
 2. [ ] Netlify Environment Variables 값(`SUPABASE_URL`, `SUPABASE_ANON_KEY`) 확인
 3. [ ] 배포 실행 시 `Deploy project without cache` 선택
 4. [ ] 배포 후 브라우저 개발자 도구(`F12`) Console 및 Network 탭에서 200 OK 상태 확인
+
+
+
+
+# 🚀 With Keke & New Language Study - System Setup & Roadmap Guide
+
+본 문서는 Supabase 백엔드와 Netlify 호스팅을 연동한 웹 애플리케이션의 인프라 설정, 환경변수, 인증 운영 방식, 그리고 **향후 구현해야 할 미완성 기능 로드맵**을 포함한 종합 가이드입니다.
+
+---
+
+## 📊 1. 사이트별 진행 현황 (Multi-Site Status)
+
+| 사이트명 (Site Name) | 배포 및 Supabase 연동 | 비고 |
+| :--- | :---: | :--- |
+| **With Keke** | **`완료 (Active)`** | Netlify 및 Supabase(`https://tspmpdtslcnozbbkhirs.supabase.co`) 정상 연동 완료 |
+| **New Language Study** | **`미진행 (Pending)`** | 동일한 환경변수 및 배포 파이프라인 적용 필요 |
+
+---
+
+## 🔑 2. Supabase 백엔드 핵심 정보
+
+* **Project Name**: With Keke
+* **Region**: `ap-northeast-2` (Seoul)
+* **Project URL**: `https://tspmpdtslcnozbbkhirs.supabase.co`
+  > ⚠️ **중요 (URL 철자)**: `tspmpd` 뒤에 **`t`**가 반드시 포함되어야 함 (`tspmpdtsl...`). `t` 누락 시 `ERR_NAME_NOT_RESOLVED` 도메인 에러 발생.
+* **API Key (anon public)**: `eyJ...`로 시작하는 JWT 토큰 문자열
+  > ⚠️ **중요 (키 형식)**: `sb_publishable_...` 키가 아닌 `Project Settings -> API`의 **`anon public` (`eyJ...`)** 키를 사용해야 `401 Unauthorized` 에러 방지.
+
+---
+
+## ⚙️ 3. Netlify 환경변수 (Environment Variables)
+
+Netlify Dashboard $\rightarrow$ `Site configuration` $\rightarrow$ `Environment variables` 등록 필수 항목:
+
+```env
+SUPABASE_URL = [https://tspmpdtslcnozbbkhirs.supabase.co](https://tspmpdtslcnozbbkhirs.supabase.co)
+SUPABASE_ANON_KEY = eyJ... (JWT anon public key)
+VITE_SUPABASE_URL = [https://tspmpdtslcnozbbkhirs.supabase.co](https://tspmpdtslcnozbbkhirs.supabase.co)
+VITE_SUPABASE_ANON_KEY = eyJ... (JWT anon public key)
+SECRETS_SCAN_ENABLED = false
+SECRETS_SCAN_OMIT_KEYS = SUPABASE_ANON_KEY, SUPABASE_URL
