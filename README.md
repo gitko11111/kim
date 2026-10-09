@@ -1,62 +1,91 @@
-# 🚀 게시판 프로젝트 & 프로토타입 시스템 관리 가이드
+# 🚀 With Keke & New Language Study - Web Application Setup Guide
 
-이 문서는 웹사이트 운영, 유지보수, 프로토타입 복제 및 주요 인프라 관리를 위한 통합 시스템 가이드 문서입니다.
-
----
-
-## 1. 프로젝트 개요
-
-* **주요 기능:** 회원가입/로그인, 게시글 작성·수정·삭제, 댓글 작성, 파일 첨부
-* **운영 목적:** 게시판 서비스 운영 및 프로토타입 테스트
+본 문서는 Supabase 백엔드와 Netlify 호스팅을 연동한 웹 애플리케이션의 인프라 설정, 환경변수, 배포 파이프라인 및 트러블슈팅 가이드입니다. 1년 뒤나 새로운 개발 환경에서도 그대로 적용할 수 있도록 모든 핵심 설정을 기술합니다.
 
 ---
 
-## 2. 연동 서비스 (인프라 현황)
+## 🛠 1. 프로젝트 시스템 구조 및 기술 스택
 
-| 역할 | 서비스명 | 주소 / 대시보드 | 주요 기능 및 특징 |
-| :--- | :--- | :--- | :--- |
-| **코드 저장소** | **GitHub** | [저장소 바로가기](https://github.com/gitko11111/kim) | 메인 소스코드 관리 (index.html 등) |
-| **웹 배포** | **Netlify** | [실제 사이트](https://regal-melba-913d66.netlify.app/) / [대시보드](https://app.netlify.com/projects/my-community-board/overview) | 코드가 변경되면 10~30초 내 자동 배포 |
-| **데이터베이스** | **Supabase** | [대시보드 접속](https://supabase.com) | 게시글, 댓글, 회원정보, 파일 저장소 |
-| **자동 유지** | **cron-job.org** | [콘솔 접속](https://console.cron-job.org) | DB 일시정지(Sleep) 방지용 주기적 호출 |
+* **Frontend**: HTML5 / JavaScript / Tailwind CSS (CDN/Vite)
+* **Hosting & Deployment**: Netlify
+* **Backend as a Service (BaaS)**: Supabase (`ap-northeast-2` 서울 리전)
+* **Linked Projects**: `New Language Study`, `With Keke`
 
 ---
 
-## 3. 주요 운영 및 수정 방법
+## 🔑 2. Supabase 서버 접속 정보
 
-### 3.1 소스코드 수정 및 자동 배포 (GitHub & Netlify)
-* **코드 수정:** GitHub 저장소의 `index.html` 파일을 수정 후 **`Commit changes`**를 완료하면 작업이 끝납니다.
-* **자동 업데이트:** GitHub에 코드가 업데이트되면 연동된 **Netlify가 변경사항을 자동으로 감지하여 10~30초 이내에 실제 웹사이트에 즉시 반영**합니다.
-
-### 3.2 신규 회원가입 차단 및 허용 설정 (Supabase)
-이벤트 종료나 관리 목적으로 신규 회원가입을 잠시 막거나 다시 열어야 할 때 사용합니다.
-1. [Supabase 대시보드](https://supabase.com) 접속 후 로그인
-2. 좌측 메뉴 **[Authentication]** ➔ **[Providers]** 클릭
-3. 목록에서 **[Email]** 선택
-4. **[Allow new users to sign up]** 스위치 설정:
-   * **회원가입 차단:** `OFF` 설정 후 하단 **[Save]** 클릭
-   * **회원가입 재개:** `ON` 설정 후 하단 **[Save]** 클릭
-
-### 3.3 데이터 백업 (CSV 추출)
-1. Supabase ➔ **[Table Editor]** 이동
-2. 백업할 테이블(예: `posts`, `users` 등) 선택
-3. 우측 상단 **[Export as CSV]** 클릭하여 데이터 다운로드
-
-### 3.4 게시판 복제 및 새 프로토타입 만들기
-1. **Supabase:** 새 프로젝트를 생성하고 DB 테이블 구조(Schema) 세팅
-2. **Netlify:** 동일한 GitHub 저장소(`gitko11111/kim`)를 연결하여 새 사이트 생성
-3. **환경변수 변경:** 새로 만든 Netlify 사이트의 Environment Variables에 새 Supabase의 `URL`과 `ANON_KEY` 적용
+* **Project Name**: With Keke
+* **Region**: `ap-northeast-2` (Seoul)
+* **Project URL**: `https://tspmpdtslcnozbbkhirs.supabase.co`
+  > ⚠️ **주의 (URL 오타 주의)**: `tspmpd` 뒤에 **`t`**가 포함되어 있어야 합니다 (`tspmpdtslcnozbbkhirs`). `t`가 빠지면 DNS 조회 오류(`ERR_NAME_NOT_RESOLVED`)가 발생합니다.
+* **API Key (anon public)**: `eyJ...`로 시작하는 긴 JWT 토큰 문자열
+  > ⚠️ **주의 (키 형식)**: `sb_publishable_...` 형태의 Publishable Key 대신, `Project Settings -> API`의 `anon` `public` (`eyJ...`) 키를 사용해야 `401 (Unauthorized)` 에러가 발생하지 않습니다.
 
 ---
 
-## 4. 인프라 운영 유의사항 & 꿀팁
+## ⚙️ 3. Netlify 환경변수 (Environment Variables) 설정
 
-* **GitHub 계정 관리:** Supabase 등의 주요 서비스가 GitHub 연동 계정으로 연결되어 있으므로, GitHub 계정 보안 및 로그인을 항상 유지해 주세요.
-* **Supabase 용량 & 프로젝트 관리:**
-  * 무료 플랜은 **프로젝트당 500MB DB 용량**을 제공하며, **동시 활성화 프로젝트 2개**로 제한됩니다.
-  * 용량이 가득 차면 새 프로젝트를 생성해야 합니다.
-  * 기존 프로젝트를 'Pause(정지)' 상태로 두면 무료 개수 제한에 걸리지 않고 여러 프로토타입 프로젝트를 계속 생성해 둘 수 있습니다.
-* **DB 서버 정지 방지 (cron-job.org):**
-  * Supabase 무료 DB는 일정 기간 요청이 없으면 서버가 잠드는(Sleep) 현상이 있습니다.
-  * `cron-job.org`를 통해 3일에 한 번씩 정기적으로 DB에 Ping(접속 요청)을 보내어 **DB가 자동 정지되지 않도록 방지**하고 있습니다.
-📝 GitHub README.md에 반영하는 방법
+Netlify Dashboard $\rightarrow$ `Site configuration` $\rightarrow$ `Environment variables`에 반드시 등록해야 하는 항목입니다.
+
+| Variable Key | Value / Example | Description |
+| :--- | :--- | :--- |
+| `SUPABASE_URL` | `https://tspmpdtslcnozbbkhirs.supabase.co` | Supabase API 접속 엔드포인트 |
+| `SUPABASE_ANON_KEY` | `eyJ...` (JWT anon key) | Supabase 클라이언트 퍼블릭 인증 키 |
+| `VITE_SUPABASE_URL` | `https://tspmpdtslcnozbbkhirs.supabase.co` | Vite 프레임워크 빌드 시 주입용 변수 |
+| `VITE_SUPABASE_ANON_KEY` | `eyJ...` (JWT anon key) | Vite 프레임워크 빌드 시 주입용 키 |
+| `SECRETS_SCAN_ENABLED` | `false` | Netlify 빌드 시 API 키 차단 차단 해제 |
+| `SECRETS_SCAN_OMIT_KEYS` | `SUPABASE_ANON_KEY, SUPABASE_URL` | 시크릿 스캐너 예외 처리 대상 |
+
+---
+
+## 🛡️ 4. Netlify 빌드 오류 (Secrets Scan) 방지 설정
+
+Netlify는 빌드 중 환경변수 내 `SUPABASE_ANON_KEY`나 URL 패턴을 감지하면 보안 위협으로 판단하여 빌드를 블록(`Build Failed`)할 수 있습니다.
+
+### 해결 조치
+1. Netlify 환경변수에 `SECRETS_SCAN_ENABLED = false` 추가
+2. `SECRETS_SCAN_OMIT_KEYS = SUPABASE_ANON_KEY, SUPABASE_URL` 추가
+3. 설정 후 반드시 **`Trigger deploy -> Deploy project without cache`**로 배포 진행
+
+---
+
+## 🔐 5. Supabase Auth (인증) 및 CORS 설정
+
+1. [Supabase Dashboard](https://supabase.com/dashboard) 접속 $\rightarrow$ 프로젝트 선택
+2. `Authentication` $\rightarrow$ `URL Configuration` 이동
+3. **Site URL**: `https://<your-netlify-app-name>.netlify.app` 등록
+4. **Redirect URLs**: Netlify 사이트 도메인 및 로그인/회원가입 리다이렉트 경로 등록
+5. `Authentication` $\rightarrow$ `Providers` $\rightarrow$ `Email`:
+   * 이메일 인증 절차 없이 바로 가입시키려면 `Confirm email` 비활성화 (`Off`)
+
+---
+
+## 🚨 6. 트러블슈팅 마스터 가이드 (자주 발생하는 오류 및 해결)
+
+### 1) `net::ERR_NAME_NOT_RESOLVED`
+* **원인**: 
+  1. `SUPABASE_URL`에 오타가 존재함 (`tspmpdsl` vs `tspmpdtsl`).
+  2. Supabase 프로젝트가 무료 플랜 미사용으로 인해 일시 정지(`Paused`)됨.
+* **해결**:
+  1. URL 중간에 **`t`**가 들어간 `https://tspmpdtslcnozbbkhirs.supabase.co` 주소로 교체.
+  2. Supabase 대시보드에서 `Restore project` 버튼을 눌러 프로젝트 가동 (`Active` 상태 확인).
+
+### 2) `401 (Unauthorized)`
+* **원인**: `SUPABASE_ANON_KEY`에 잘못된 API 키(`sb_publishable_...` 등)가 주입됨.
+* **해결**: Supabase 대시보드 `Project Settings -> API`에서 **`eyJ...`**로 시작하는 **`anon public`** 키를 복사하여 Netlify 환경변수에 재입력.
+
+### 3) 소스 코드/사이트에 이전 설정값이 계속 적용되는 현상
+* **원인**: Netlify 빌드 캐시 또는 브라우저 캐시 문제.
+* **해결**:
+  1. Netlify: `Deploys` $\rightarrow$ `Trigger deploy` $\rightarrow$ `Deploy project without cache` 실행.
+  2. 브라우저: `Ctrl + F5` (Mac: `Cmd + Shift + R`) 강력 새로고침 또는 시크릿 창 접속.
+
+---
+
+## 🔄 7. 유지보수 및 재배포 표준 체크리스트
+
+1. [ ] Supabase 프로젝트가 `Active` 상태인지 확인
+2. [ ] Netlify Environment Variables 값(`SUPABASE_URL`, `SUPABASE_ANON_KEY`) 확인
+3. [ ] 배포 실행 시 `Deploy project without cache` 선택
+4. [ ] 배포 후 브라우저 개발자 도구(`F12`) Console 및 Network 탭에서 200 OK 상태 확인
