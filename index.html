@@ -878,17 +878,20 @@
         const authorName = userDisplayName || currentUser.email.split('@')[0];
         const imageUrlValue = attachments.length > 0 ? JSON.stringify(attachments) : null;
 
-        const payload = { post_id: postId, user_email: authorName, content };
+        const payload = { post_id: postId, user_email: authorName, content: content };
         if (imageUrlValue) {
           payload.image_url = imageUrlValue;
         }
 
-        const { error } = await supabaseClient
+        const { data, error } = await supabaseClient
           .from('comments')
-          .insert([payload]);
+          .insert([payload])
+          .select();
 
         if (error) {
           alert("댓글 작성 실패: " + error.message);
+        } else if (!data || data.length === 0) {
+          alert("댓글 작성 실패: DB 권한(RLS) 문제로 저장되지 않았습니다. 1단계 SQL 쿼리를 실행해 주세요.");
         } else {
           inputEl.value = '';
           if(fileInput) fileInput.value = '';
@@ -977,16 +980,22 @@
       submitBtn.disabled = true;
       submitBtn.innerText = "저장 중...";
 
-      const { error } = await supabaseClient
+      const { data, error } = await supabaseClient
         .from('posts')
         .update({ title: title, content: content })
-        .eq('id', postId);
+        .eq('id', postId)
+        .select();
 
       if (error) {
         alert("수정 실패: " + error.message);
         submitBtn.disabled = false;
         submitBtn.innerText = "저장";
+      } else if (!data || data.length === 0) {
+        alert("수정 실패: DB 권한(RLS) 문제로 저장되지 않았습니다. 1단계 SQL 쿼리를 실행해 주세요.");
+        submitBtn.disabled = false;
+        submitBtn.innerText = "저장";
       } else {
+        alert("성공적으로 수정되었습니다!");
         loadPosts(); 
       }
     }
