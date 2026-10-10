@@ -5,33 +5,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title id="site-page-title">커뮤니티 게시판</title>
 
-  <!-- [1] Tailwind CSS CDN: 모던 UI 디자인을 위한 유틸리티 CSS 라이브러리 -->
+  <!-- [1] Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- [2] Supabase JS SDK v2: 백엔드(DB, Auth, Storage) 연동 라이브러리 -->
+  <!-- [2] Supabase JS SDK v2 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-slate-100 min-h-screen font-sans flex flex-col justify-between">
 
   <!-- ==================================================================== -->
-  <!-- [HEADER] 상단 네비게이션 바 & 사용자 상태 표시                       -->
+  <!-- [HEADER] 상단 네비게이션 바 & 사용자 상태                            -->
   <!-- ==================================================================== -->
   <header class="bg-white shadow-sm border-b sticky top-0 z-50">
     <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
       <h1 id="site-header-title" class="text-xl font-bold text-indigo-600 flex items-center gap-2">
         커뮤니티 게시판
       </h1>
-      <!-- 로그인 여부에 따라 '로그인 버튼' 또는 '사용자 이름/로그아웃 버튼'이 동적으로 주입됩니다 -->
       <div id="auth-status" class="flex items-center gap-3"></div>
     </div>
   </header>
 
   <!-- ==================================================================== -->
-  <!-- [MAIN] 메인 영역 (로그인폼, 카테고리, 작성폼, 검색, 게시글목록)     -->
+  <!-- [MAIN] 메인 콘텐츠 영역                                             -->
   <!-- ==================================================================== -->
   <main class="max-w-4xl mx-auto px-4 py-8 space-y-8 flex-1 w-full">
 
-    <!-- 1. 로그인 / 회원가입 폼 (기본적으로 숨김 처리: hidden) -->
+    <!-- 1. 로그인 / 회원가입 폼 -->
     <section id="auth-section" class="bg-white p-6 rounded-2xl shadow-sm border space-y-4 max-w-md mx-auto hidden">
       <h2 id="auth-title" class="text-lg font-bold text-gray-800 text-center">로그인 / 회원가입</h2>
       <div class="space-y-3">
@@ -55,12 +54,11 @@
       <p id="auth-msg" class="text-xs text-center text-red-500 min-h-[16px]"></p>
     </section>
 
-    <!-- 2. 동적 카테고리 탭 (사이트 접속 주소에 따라 자동 전환) -->
+    <!-- 2. 동적 카테고리 탭 -->
     <section id="category-tabs-container" class="flex gap-2 overflow-x-auto pb-2 border-b">
-      <!-- 자바스크립트에 의해 사이트맞춤 카테고리가 동적으로 생성됩니다 -->
     </section>
 
-    <!-- 3. 게시글 작성 폼 (로그인한 사용자에게만 표시됨) -->
+    <!-- 3. 게시글 작성 폼 -->
     <section id="write-section" class="bg-white p-6 rounded-2xl shadow-sm border space-y-4 hidden">
       <h2 class="text-md font-bold text-gray-800 flex items-center gap-2">
         ✏️ 새 글 작성하기
@@ -69,7 +67,6 @@
         <div>
           <label class="block text-xs font-semibold text-gray-600 mb-1">카테고리</label>
           <select id="post-category" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
-            <!-- 동적 카테고리 옵션이 주입됩니다 -->
           </select>
         </div>
         <div class="md:col-span-2">
@@ -82,12 +79,12 @@
         <textarea id="post-content" rows="3" placeholder="내용을 입력하세요..." class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
       </div>
 
-      <!-- 다중 파일 첨부 영역 (사진, 음악, 동영상, PDF, 일반 문서 지원) -->
+      <!-- 다중 파일 첨부 -->
       <div>
         <label class="block text-xs font-semibold text-gray-600 mb-1">
-          📎 파일 첨부 (사진 자동 용량 축소, 음악, 동영상, PDF 등 다중 선택 가능)
+          📎 파일 첨부 (사진 자동 용량 축소, 음악, 동영상, PDF, 일반 문서 등 다중 선택 가능)
         </label>
-        <input type="file" id="post-files" multiple accept="image/*, audio/*, video/*, application/pdf, .zip, .docx, .xlsx, .pptx, .hwp" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+        <input type="file" id="post-files" multiple accept="image/*, audio/*, video/*, application/pdf, .zip, .docx, .xlsx, .pptx, .hwp, .hwpx" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
       </div>
 
       <div class="flex justify-end">
@@ -97,10 +94,9 @@
       </div>
     </section>
 
-    <!-- 4. 검색 기능 (키워드 / 날짜 검색) -->
+    <!-- 4. 검색 기능 -->
     <section class="flex flex-col md:flex-row gap-2 bg-white p-4 rounded-xl shadow-sm border">
       <select id="search-category" class="px-3 py-2 border rounded-lg text-sm bg-white">
-        <!-- 동적 카테고리 옵션 -->
       </select>
 
       <select id="search-type" onchange="toggleSearchInput()" class="px-3 py-2 border rounded-lg text-sm bg-white">
@@ -117,14 +113,13 @@
       <button type="button" onclick="resetSearch()" class="bg-gray-200 text-gray-700 font-semibold px-5 py-2 rounded-lg text-sm hover:bg-gray-300 transition">초기화</button>
     </section>
 
-    <!-- 5. 게시글 목록 출력 컨테이너 -->
+    <!-- 5. 게시글 목록 출력 -->
     <section id="posts-container" class="space-y-4">
       <div class="text-center py-12 text-gray-400">게시글을 불러오는 중...</div>
     </section>
 
   </main>
 
-  <!-- [FOOTER] 푸터 및 관리자 가이드 링크 -->
   <footer class="w-full bg-white border-t mt-12 py-6 text-center text-xs text-gray-400">
     <div class="max-w-4xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
       <p id="footer-copy">© 커뮤니티</p>
@@ -135,13 +130,9 @@
   </footer>
 
   <!-- ==================================================================== -->
-  <!-- [JAVASCRIPT] 핵심 동작 로직 및 멀티 사이트 컨트롤러                  -->
+  <!-- [JAVASCRIPT] 핵심 동작 및 멀티 사이트 컨트롤러                      -->
   <!-- ==================================================================== -->
   <script>
-    /* --------------------------------------------------------------------
-     * [1. 멀티 사이트 타이틀 및 카테고리 설정 정의]
-     * 접속 도메인을 감지하여 사이트 이름과 카테고리를 동적으로 변경합니다.
-     * -------------------------------------------------------------------- */
     const SITE_CONFIGS = {
       withkeke: {
         siteId: 'withkeke',
@@ -166,17 +157,12 @@
       }
     };
 
-    // 현재 접속한 도메인 주소(URL)로 사이트 종류 자동 판별
     let CURRENT_SITE_KEY = 'withkeke';
     if (window.location.hostname.includes('language')) {
       CURRENT_SITE_KEY = 'language';
     }
     const currentSiteConfig = SITE_CONFIGS[CURRENT_SITE_KEY];
 
-    /* --------------------------------------------------------------------
-     * [2. Netlify 환경변수 및 Supabase 클라이언트 안전 생성]
-     * 빌드 시 환경변수가 치환되며, 미치환 시 예외 처리하여 버튼 먹통 방지
-     * -------------------------------------------------------------------- */
     let rawUrl = "__SUPABASE_URL__";
     let rawKey = "__SUPABASE_ANON_KEY__";
 
@@ -194,24 +180,17 @@
       console.error("Supabase 생성 에러:", e);
     }
 
-    /* --------------------------------------------------------------------
-     * [3. 전역 상태 변수]
-     * -------------------------------------------------------------------- */
-    let currentCategory = 'all';        // 현재 선택된 카테고리 탭
-    let currentUser = null;            // 현재 로그인된 사용자 정보
-    let userDisplayName = '';          // 표시용 닉네임 또는 이메일 아이디
+    let currentCategory = 'all';
+    let currentUser = null;
+    let userDisplayName = '';
     
-    let currentSearchCategory = 'all'; // 검색 카테고리
-    let currentSearchType = 'all';     // 검색 조건 (all/title/content/date)
-    let currentSearchKeyword = '';    // 검색 키워드
-    let currentSearchDate = '';       // 검색 날짜
+    let currentSearchCategory = 'all';
+    let currentSearchType = 'all';
+    let currentSearchKeyword = '';
+    let currentSearchDate = '';
 
-    // [중요] 게시글 수정 시 따옴표 탈출 버그 방지를 위해 조회된 글 데이터를 ID별로 저장하는 맵
     const loadedPostsMap = {};
 
-    /* --------------------------------------------------------------------
-     * [4. 초기화] DOM 로드 시 사이트 UI 구성, 사용자 인증 확인 및 게시글 로드
-     * -------------------------------------------------------------------- */
     window.addEventListener('DOMContentLoaded', async () => {
       initSiteUI();
       try {
@@ -222,13 +201,11 @@
       loadPosts();
     });
 
-    // 사이트별 UI 동적 세팅 (타이틀, 카테고리 탭, 드롭다운 옵션)
     function initSiteUI() {
       document.getElementById('site-page-title').innerText = currentSiteConfig.title;
       document.getElementById('site-header-title').innerHTML = currentSiteConfig.title;
       document.getElementById('footer-copy').innerText = `© ${currentSiteConfig.title}`;
 
-      // 카테고리 탭 생성 (전체 + 사이트별 카테고리)
       const tabsContainer = document.getElementById('category-tabs-container');
       let tabsHtml = `<button type="button" onclick="setCategory('all')" id="tab-all" class="cat-tab px-4 py-2 rounded-full text-sm font-semibold bg-indigo-600 text-white shadow-sm shrink-0">전체</button>`;
       
@@ -237,7 +214,6 @@
       });
       tabsContainer.innerHTML = tabsHtml;
 
-      // 글 작성 카테고리 드롭다운 생성
       const postCatSelect = document.getElementById('post-category');
       let postCatHtml = '';
       currentSiteConfig.categories.forEach(cat => {
@@ -245,7 +221,6 @@
       });
       postCatSelect.innerHTML = postCatHtml;
 
-      // 검색 카테고리 드롭다운 생성
       const searchCatSelect = document.getElementById('search-category');
       let searchCatHtml = `<option value="all">전체 카테고리</option>`;
       currentSiteConfig.categories.forEach(cat => {
@@ -254,9 +229,6 @@
       searchCatSelect.innerHTML = searchCatHtml;
     }
 
-    /* --------------------------------------------------------------------
-     * [5. 인증 관련 기능] checkAuth, handleSignUp, handleSignIn, handleSignOut
-     * -------------------------------------------------------------------- */
     async function checkAuth() {
       if (!supabaseClient) return;
       try {
@@ -345,9 +317,6 @@
       loadPosts();
     }
 
-    /* --------------------------------------------------------------------
-     * [6. 카테고리 및 검색 제어 함수]
-     * -------------------------------------------------------------------- */
     function setCategory(cat) {
       currentCategory = cat;
       document.querySelectorAll('.cat-tab').forEach(btn => {
@@ -417,10 +386,6 @@
       setCategory('all');
     }
 
-    /* --------------------------------------------------------------------
-     * [7. 유튜브 주소 감지 및 Embed 플레이어 생성 함수]
-     * 본문이나 댓글 내의 YouTube 링크(Shorts, watch, youtu.be)를 임베드 파싱
-     * -------------------------------------------------------------------- */
     function getYouTubeEmbedsHtml(content) {
       if (!content) return '';
       const ytRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/g;
@@ -447,9 +412,9 @@
               </iframe>
             </div>
             <div class="flex justify-between items-center text-[11px] px-1">
-              <span class="text-gray-400">💡 로컬 파일 실행 시 유튜브 차단이 생길 수 있습니다</span>
+              <span class="text-gray-400">💡 유튜브 영상 자동 감지됨</span>
               <a href="https://www.youtube.com/watch?v=${id}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 font-semibold hover:underline">
-                ↗️ YouTube에서 직접 보기
+                ↗️ YouTube에서 크게 보기
               </a>
             </div>
           </div>
@@ -459,11 +424,6 @@
       return html;
     }
 
-    /* --------------------------------------------------------------------
-     * [8. 첨부파일 파서 및 HTML 생성 함수]
-     * DB의 image_url/attachments 컬럼(JSON, JSONB, 단일 URL)의 구조를 정규화
-     * 사진, 음악, 동영상, PDF, 일반 문서 형식에 맞춰 UI를 렌더링합니다.
-     * -------------------------------------------------------------------- */
     function parseAttachments(raw) {
       if (!raw) return [];
       if (Array.isArray(raw)) return raw;
@@ -494,7 +454,7 @@
         const name = escapeHtml(att.name || '첨부파일');
         const url = att.url;
 
-        // 1. 이미지 파일 (사진)
+        // 1. 이미지
         if (type.startsWith('image/')) {
           html += `
             <div class="space-y-1.5">
@@ -502,14 +462,14 @@
                 <img src="${url}" alt="${name}" class="max-h-[500px] w-auto object-contain hover:scale-[1.01] transition duration-200">
               </a>
               <div class="flex justify-between items-center text-[11px] text-gray-500 px-1">
-                <a href="${url}" target="_blank" rel="noopener noreferrer" class="truncate hover:underline text-indigo-600 font-semibold">🖼️ ${name} (🔍 원본보기)</a>
+                <a href="${url}" target="_blank" rel="noopener noreferrer" class="truncate hover:underline text-indigo-600 font-semibold">🖼️ ${name} (🔍 원본)</a>
                 <a href="${url}" download="${name}" target="_blank" class="inline-flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-2 py-1 rounded transition shrink-0">
                   📥 다운로드
                 </a>
               </div>
             </div>`;
         } 
-        // 2. 오디오 파일 (음악/녹음)
+        // 2. 오디오 (음악)
         else if (type.startsWith('audio/')) {
           html += `
             <div class="bg-purple-50 p-2.5 rounded-xl border border-purple-100 space-y-1">
@@ -522,7 +482,7 @@
               </audio>
             </div>`;
         } 
-        // 3. 비디오 파일 (동영상)
+        // 3. 비디오 (동영상)
         else if (type.startsWith('video/')) {
           html += `
             <div class="bg-black/5 p-2.5 rounded-xl border space-y-1">
@@ -553,7 +513,7 @@
               </div>
             </div>`;
         } 
-        // 5. 기타 다운로드 파일 (ZIP, 문서 등)
+        // 5. 기타 파일
         else {
           html += `
             <div class="flex justify-between items-center p-2.5 bg-gray-50 rounded-xl border text-[11px]">
@@ -571,11 +531,6 @@
       return html;
     }
 
-    /* --------------------------------------------------------------------
-     * [9. 이미지 클라이언트 측 스마트 압축 함수]
-     * Canvas API를 이용해 대용량 이미지를 브라우저단에서 1200px / Quality 0.8로 축소
-     * (500KB 이하 이미지는 압축을 건너뛰어 품질을 보존합니다)
-     * -------------------------------------------------------------------- */
     async function compressImage(file) {
       return new Promise((resolve) => {
         if (!file.type.startsWith('image/') || file.type.includes('svg') || file.size <= 500 * 1024) {
@@ -627,10 +582,6 @@
       });
     }
 
-    /* --------------------------------------------------------------------
-     * [10. 공통 파일 업로드 처리 함수]
-     * 게시글 및 댓글에서 전달받은 파일 배열을 압축 후 Storage에 등록
-     * -------------------------------------------------------------------- */
     async function uploadFilesToStorage(files, bucketName = 'files', prefix = 'file') {
       const attachments = [];
 
@@ -660,9 +611,6 @@
       return attachments;
     }
 
-    /* --------------------------------------------------------------------
-     * [11. 게시글 등록 / 목록 불러오기 / 수정 / 삭제]
-     * -------------------------------------------------------------------- */
     async function createPost() {
       const category = document.getElementById('post-category').value;
       const title = document.getElementById('post-title').value.trim();
@@ -719,7 +667,6 @@
         if (currentCategory !== 'all') {
           query = query.eq('category', currentCategory);
         } else {
-          // 전체 선택 시 현재 사이트 카테고리의 글만 필터링해서 표시
           const validCatIds = currentSiteConfig.categories.map(c => c.id);
           query = query.in('category', validCatIds);
         }
@@ -822,19 +769,23 @@
                 ${postAttachments}
               </div>
 
+              <!-- 댓글 영역 -->
               <div class="pt-4 border-t space-y-3">
                 <h5 class="text-xs font-bold text-gray-700">💬 댓글</h5>
                 <div class="space-y-2">${commentsListHtml}</div>
                 ${currentUser ? `
-                  <div class="pt-2 border-t space-y-2">
-                    <input type="text" id="comment-input-${post.id}" placeholder="댓글 내용 (유튜브 주소 자동 변환)" class="w-full px-3 py-1.5 border rounded-lg text-xs" onkeypress="if(event.key === 'Enter') addComment(${post.id})">
-                    <div class="flex items-center justify-between gap-2">
-                      <input type="file" id="comment-files-${post.id}" multiple accept="image/*, audio/*, video/*, application/pdf, .zip, .docx, .xlsx, .pptx, .hwp" class="text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 flex-1">
-                      <button type="button" onclick="addComment(${post.id})" id="comment-submit-btn-${post.id}" class="bg-indigo-600 text-white text-xs font-semibold px-4 py-1.5 rounded-lg hover:bg-indigo-700 shrink-0">등록</button>
+                  <div class="pt-3 border-t space-y-2">
+                    <textarea id="comment-input-${post.id}" rows="2" placeholder="댓글 내용 (유튜브 주소 입력 시 영상 자동 전환)" class="w-full px-3 py-2 border rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                    <div class="space-y-1">
+                      <label class="block text-[11px] font-semibold text-gray-500">📎 댓글 파일 첨부 (사진, 음악, 동영상, PDF 다중 선택 가능)</label>
+                      <div class="flex items-center justify-between gap-2">
+                        <input type="file" id="comment-files-${post.id}" multiple accept="image/*, audio/*, video/*, application/pdf, .zip, .docx, .xlsx, .pptx, .hwp, .hwpx" class="text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 flex-1">
+                        <button type="button" onclick="addComment(${post.id})" id="comment-submit-btn-${post.id}" class="bg-indigo-600 text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-indigo-700 transition shrink-0">댓글 등록</button>
+                      </div>
                     </div>
                   </div>
                 ` : `
-                  <p class="text-xs text-gray-400 text-center">댓글을 작성하려면 로그인이 필요합니다.</p>
+                  <p class="text-xs text-gray-400 text-center py-2 bg-gray-50 rounded-lg">댓글을 작성하려면 로그인이 필요합니다.</p>
                 `}
               </div>
             </article>
@@ -857,17 +808,19 @@
       const inputEl = document.getElementById(`comment-input-${postId}`);
       const fileInput = document.getElementById(`comment-files-${postId}`);
       const submitBtn = document.getElementById(`comment-submit-btn-${postId}`);
-      const content = inputEl.value.trim();
+      const content = inputEl ? inputEl.value.trim() : '';
 
       const files = fileInput && fileInput.files ? Array.from(fileInput.files) : [];
 
       if (!content && files.length === 0) {
-        alert("댓글 내용이나 파일을 입력해주세요.");
+        alert("댓글 내용이나 첨부파일 중 하나는 입력해주세요.");
         return;
       }
 
-      submitBtn.disabled = true;
-      submitBtn.innerText = "등록 중...";
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerText = "등록 중...";
+      }
 
       try {
         let attachments = [];
@@ -878,7 +831,12 @@
         const authorName = userDisplayName || currentUser.email.split('@')[0];
         const imageUrlValue = attachments.length > 0 ? JSON.stringify(attachments) : null;
 
-        const payload = { post_id: postId, user_email: authorName, content: content };
+        const payload = { 
+          post_id: postId, 
+          user_email: authorName, 
+          content: content 
+        };
+
         if (imageUrlValue) {
           payload.image_url = imageUrlValue;
         }
@@ -891,10 +849,10 @@
         if (error) {
           alert("댓글 작성 실패: " + error.message);
         } else if (!data || data.length === 0) {
-          alert("댓글 작성 실패: DB 권한(RLS) 문제로 저장되지 않았습니다. 1단계 SQL 쿼리를 실행해 주세요.");
+          alert("댓글 작성 실패: DB 권한(RLS) 문제이거나 컬럼이 없습니다. 1단계 SQL을 먼저 실행해주세요.");
         } else {
-          inputEl.value = '';
-          if(fileInput) fileInput.value = '';
+          if (inputEl) inputEl.value = '';
+          if (fileInput) fileInput.value = '';
           loadPosts();
         }
       } catch (e) {
@@ -902,13 +860,13 @@
       } finally {
         if (submitBtn) {
           submitBtn.disabled = false;
-          submitBtn.innerText = "등록";
+          submitBtn.innerText = "댓글 등록";
         }
       }
     }
 
     async function deletePost(postId) {
-      if (!currentUser || !confirm("정말로 삭제하시겠습니까?")) return;
+      if (!currentUser || !confirm("정말로 이 게시글을 삭제하시겠습니까?")) return;
 
       try {
         const { error } = await supabaseClient.from('posts').delete().eq('id', postId);
@@ -919,18 +877,12 @@
       }
     }
 
-    /* --------------------------------------------------------------------
-     * [12. 유틸리티] HTML 이스케이프 함수 (XSS 방지)
-     * -------------------------------------------------------------------- */
     function escapeHtml(str) {
       if(!str) return '';
       return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
-    /* --------------------------------------------------------------------
-     * [13. 게시글 수정 폼 제어 함수]
-     * openEditForm: loadedPostsMap 메모리에서 안전하게 가져와 따옴표 버그 방지
-     * -------------------------------------------------------------------- */
+    /* 본문 및 카테고리 수정 폼 */
     function openEditForm(postId) {
       const post = loadedPostsMap[postId];
       if (!post) {
@@ -941,20 +893,38 @@
       const viewEl = document.getElementById(`post-view-${postId}`);
       if (!viewEl) return;
 
+      let catOptionsHtml = '';
+      currentSiteConfig.categories.forEach(cat => {
+        const selected = (cat.id === post.category) ? 'selected' : '';
+        catOptionsHtml += `<option value="${cat.id}" ${selected}>${cat.label}</option>`;
+      });
+
       viewEl.innerHTML = `
-        <div class="bg-indigo-50/60 p-4 rounded-xl border border-indigo-100 space-y-3">
+        <div class="bg-indigo-50/70 p-4 rounded-xl border border-indigo-200 space-y-3">
           <h4 class="text-sm font-bold text-indigo-700 flex items-center gap-1">✏️ 게시글 수정</h4>
-          <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1">제목</label>
-            <input type="text" id="edit-title-${postId}" class="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">카테고리</label>
+              <select id="edit-category-${postId}" class="w-full px-3 py-1.5 border rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                ${catOptionsHtml}
+              </select>
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-xs font-semibold text-gray-600 mb-1">제목</label>
+              <input type="text" id="edit-title-${postId}" class="w-full px-3 py-1.5 border rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
           </div>
           <div>
             <label class="block text-xs font-semibold text-gray-600 mb-1">내용</label>
-            <textarea id="edit-content-${postId}" rows="4" class="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+            <textarea id="edit-content-${postId}" rows="4" class="w-full px-3 py-1.5 border rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">추가 파일 첨부 (기존 파일에 유지 추가)</label>
+            <input type="file" id="edit-files-${postId}" multiple accept="image/*, audio/*, video/*, application/pdf, .zip, .docx, .xlsx, .pptx, .hwp, .hwpx" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-100 file:text-indigo-700">
           </div>
           <div class="flex justify-end gap-2 pt-2">
-            <button type="button" onclick="cancelEdit()" class="bg-gray-200 text-gray-700 font-semibold px-4 py-1.5 rounded-lg text-sm hover:bg-gray-300 transition">취소</button>
-            <button type="button" onclick="updatePost(${postId})" id="edit-submit-btn-${postId}" class="bg-indigo-600 text-white font-semibold px-4 py-1.5 rounded-lg text-sm hover:bg-indigo-700 transition">저장</button>
+            <button type="button" onclick="cancelEdit()" class="bg-gray-200 text-gray-700 font-semibold px-4 py-1.5 rounded-lg text-xs hover:bg-gray-300 transition">취소</button>
+            <button type="button" onclick="updatePost(${postId})" id="edit-submit-btn-${postId}" class="bg-indigo-600 text-white font-semibold px-4 py-1.5 rounded-lg text-xs hover:bg-indigo-700 transition">저장</button>
           </div>
         </div>
       `;
@@ -968,8 +938,11 @@
     }
 
     async function updatePost(postId) {
+      const post = loadedPostsMap[postId];
+      const category = document.getElementById(`edit-category-${postId}`).value;
       const title = document.getElementById(`edit-title-${postId}`).value.trim();
       const content = document.getElementById(`edit-content-${postId}`).value.trim();
+      const fileInput = document.getElementById(`edit-files-${postId}`);
       const submitBtn = document.getElementById(`edit-submit-btn-${postId}`);
 
       if (!title || !content) {
@@ -980,23 +953,39 @@
       submitBtn.disabled = true;
       submitBtn.innerText = "저장 중...";
 
-      const { data, error } = await supabaseClient
-        .from('posts')
-        .update({ title: title, content: content })
-        .eq('id', postId)
-        .select();
+      try {
+        let existingAttachments = parseAttachments(post.image_url);
+        const files = fileInput && fileInput.files ? Array.from(fileInput.files) : [];
 
-      if (error) {
-        alert("수정 실패: " + error.message);
+        if (files.length > 0) {
+          const newAttachments = await uploadFilesToStorage(files, 'files', 'post');
+          existingAttachments = [...existingAttachments, ...newAttachments];
+        }
+
+        const imageUrlValue = existingAttachments.length > 0 ? JSON.stringify(existingAttachments) : null;
+
+        const { data, error } = await supabaseClient
+          .from('posts')
+          .update({ category: category, title: title, content: content, image_url: imageUrlValue })
+          .eq('id', postId)
+          .select();
+
+        if (error) {
+          alert("수정 실패: " + error.message);
+          submitBtn.disabled = false;
+          submitBtn.innerText = "저장";
+        } else if (!data || data.length === 0) {
+          alert("수정 실패: DB 권한(RLS) 문제이거나 해당 게시글이 없습니다. 1단계 SQL 쿼리를 실행해 주세요.");
+          submitBtn.disabled = false;
+          submitBtn.innerText = "저장";
+        } else {
+          alert("성공적으로 수정되었습니다!");
+          loadPosts(); 
+        }
+      } catch (e) {
+        alert("수정 중 오류 발생: " + e.message);
         submitBtn.disabled = false;
         submitBtn.innerText = "저장";
-      } else if (!data || data.length === 0) {
-        alert("수정 실패: DB 권한(RLS) 문제로 저장되지 않았습니다. 1단계 SQL 쿼리를 실행해 주세요.");
-        submitBtn.disabled = false;
-        submitBtn.innerText = "저장";
-      } else {
-        alert("성공적으로 수정되었습니다!");
-        loadPosts(); 
       }
     }
   </script>
