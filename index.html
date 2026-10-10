@@ -150,7 +150,6 @@
       }
     };
 
-    // GitHub Pages 및 Netlify 공통 처리: 기본값을 'language'로 지정
     let CURRENT_SITE_KEY = 'language';
     if (window.location.hostname.includes('withkeke')) {
       CURRENT_SITE_KEY = 'withkeke';
@@ -646,11 +645,9 @@
       try {
         let query = supabaseClient.from('posts').select('*').order('created_at', { ascending: false });
 
+        // '전체' 탭이 아닐 때만 개별 카테고리 필터링 적용
         if (currentCategory !== 'all') {
           query = query.eq('category', currentCategory);
-        } else {
-          const validCatIds = currentSiteConfig.categories.map(c => c.id);
-          query = query.in('category', validCatIds);
         }
 
         if (currentSearchType !== 'date' && currentSearchKeyword) {
@@ -680,7 +677,10 @@
           return;
         }
 
-        const categoryLabels = {};
+        // 구 카테고리명(여행, 일상, 맛집)까지 통합 라벨 구성
+        const categoryLabels = {
+          travel: '✈️ 여행', daily: '☕ 일상', food: '🍽️ 맛집', japanese: '🇯🇵 일본어 1'
+        };
         currentSiteConfig.categories.forEach(c => { categoryLabels[c.id] = c.label; });
 
         if (!posts || posts.length === 0) {
