@@ -13,9 +13,6 @@
 </head>
 <body class="bg-slate-100 min-h-screen font-sans flex flex-col justify-between">
 
-  <!-- ==================================================================== -->
-  <!-- [HEADER] 상단 네비게이션 바 & 사용자 상태                            -->
-  <!-- ==================================================================== -->
   <header class="bg-white shadow-sm border-b sticky top-0 z-50">
     <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
       <h1 id="site-header-title" class="text-xl font-bold text-indigo-600 flex items-center gap-2">
@@ -25,9 +22,6 @@
     </div>
   </header>
 
-  <!-- ==================================================================== -->
-  <!-- [MAIN] 메인 콘텐츠 영역                                             -->
-  <!-- ==================================================================== -->
   <main class="max-w-4xl mx-auto px-4 py-8 space-y-8 flex-1 w-full">
 
     <!-- 1. 로그인 / 회원가입 폼 -->
@@ -129,9 +123,6 @@
     </div>
   </footer>
 
-  <!-- ==================================================================== -->
-  <!-- [JAVASCRIPT] 핵심 동작 및 멀티 사이트 컨트롤러                      -->
-  <!-- ==================================================================== -->
   <script>
     const SITE_CONFIGS = {
       withkeke: {
@@ -159,21 +150,15 @@
       }
     };
 
-    let CURRENT_SITE_KEY = 'withkeke';
-    if (window.location.hostname.includes('language')) {
-      CURRENT_SITE_KEY = 'language';
+    // GitHub Pages 및 Netlify 공통 처리: 기본값을 'language'로 지정
+    let CURRENT_SITE_KEY = 'language';
+    if (window.location.hostname.includes('withkeke')) {
+      CURRENT_SITE_KEY = 'withkeke';
     }
     const currentSiteConfig = SITE_CONFIGS[CURRENT_SITE_KEY];
 
-    let rawUrl = "__SUPABASE_URL__";
-    let rawKey = "__SUPABASE_ANON_KEY__";
-
-    if (rawUrl.includes("__") || !rawUrl) {
-      rawUrl = "https://tspmpdtslcnozbbkhirs.supabase.co";
-    }
-    if (rawKey.includes("__") || !rawKey) {
-      rawKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzcG1wZHRzbGNub3piYmtoaXJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM2MTg1OTUsImV4cCI6MjA2OTE5NDU5NX0.8S-sWl53C8xL_JmG7K21K5L4I3X1C8";
-    }
+    let rawUrl = "https://tspmpdtslcnozbbkhirs.supabase.co";
+    let rawKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzcG1wZHRzbGNub3piYmtoaXJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM2MTg1OTUsImV4cCI6MjA2OTE5NDU5NX0.8S-sWl53C8xL_JmG7K21K5L4I3X1C8";
 
     let supabaseClient = null;
     try {
@@ -456,7 +441,6 @@
         const name = escapeHtml(att.name || '첨부파일');
         const url = att.url;
 
-        // 1. 이미지
         if (type.startsWith('image/')) {
           html += `
             <div class="space-y-1.5">
@@ -471,7 +455,6 @@
               </div>
             </div>`;
         } 
-        // 2. 오디오 (음악)
         else if (type.startsWith('audio/')) {
           html += `
             <div class="bg-purple-50 p-2.5 rounded-xl border border-purple-100 space-y-1">
@@ -484,7 +467,6 @@
               </audio>
             </div>`;
         } 
-        // 3. 비디오 (동영상)
         else if (type.startsWith('video/')) {
           html += `
             <div class="bg-black/5 p-2.5 rounded-xl border space-y-1">
@@ -497,7 +479,6 @@
               </video>
             </div>`;
         } 
-        // 4. PDF 문서
         else if (type === 'application/pdf') {
           html += `
             <div class="flex justify-between items-center p-2.5 bg-red-50 rounded-xl border border-red-100 text-[11px]">
@@ -515,7 +496,6 @@
               </div>
             </div>`;
         } 
-        // 5. 기타 파일
         else {
           html += `
             <div class="flex justify-between items-center p-2.5 bg-gray-50 rounded-xl border text-[11px]">
@@ -851,7 +831,7 @@
         if (error) {
           alert("댓글 작성 실패: " + error.message);
         } else if (!data || data.length === 0) {
-          alert("댓글 작성 실패: DB 권한(RLS) 문제이거나 컬럼이 없습니다. 1단계 SQL을 먼저 실행해주세요.");
+          alert("댓글 작성 실패: DB 권한(RLS) 문제이거나 컬럼이 없습니다.");
         } else {
           if (inputEl) inputEl.value = '';
           if (fileInput) fileInput.value = '';
@@ -884,7 +864,6 @@
       return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
-    /* 본문 및 카테고리 수정 폼 */
     function openEditForm(postId) {
       const post = loadedPostsMap[postId];
       if (!post) {
@@ -977,7 +956,7 @@
           submitBtn.disabled = false;
           submitBtn.innerText = "저장";
         } else if (!data || data.length === 0) {
-          alert("수정 실패: DB 권한(RLS) 문제이거나 해당 게시글이 없습니다. 1단계 SQL 쿼리를 실행해 주세요.");
+          alert("수정 실패: DB 권한(RLS) 문제이거나 해당 게시글이 없습니다.");
           submitBtn.disabled = false;
           submitBtn.innerText = "저장";
         } else {
