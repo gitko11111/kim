@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>독서회 커뮤니티 게시판</title>
+  <title id="site-page-title">커뮤니티 게시판</title>
 
   <!-- [1] Tailwind CSS CDN: 모던 UI 디자인을 위한 유틸리티 CSS 라이브러리 -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -18,8 +18,8 @@
   <!-- ==================================================================== -->
   <header class="bg-white shadow-sm border-b sticky top-0 z-50">
     <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
-      <h1 class="text-xl font-bold text-indigo-600 flex items-center gap-2">
-        📖 독서회 커뮤니티
+      <h1 id="site-header-title" class="text-xl font-bold text-indigo-600 flex items-center gap-2">
+        커뮤니티 게시판
       </h1>
       <!-- 로그인 여부에 따라 '로그인 버튼' 또는 '사용자 이름/로그아웃 버튼'이 동적으로 주입됩니다 -->
       <div id="auth-status" class="flex items-center gap-3"></div>
@@ -49,19 +49,15 @@
         </div>
       </div>
       <div class="flex gap-2 pt-2">
-        <button onclick="handleSignUp()" class="flex-1 bg-gray-100 text-gray-700 font-semibold py-2 rounded-lg text-sm hover:bg-gray-200 transition">회원가입</button>
-        <button onclick="handleSignIn()" class="flex-1 bg-indigo-600 text-white font-semibold py-2 rounded-lg text-sm hover:bg-indigo-700 transition">로그인</button>
+        <button type="button" onclick="handleSignUp()" class="flex-1 bg-gray-100 text-gray-700 font-semibold py-2 rounded-lg text-sm hover:bg-gray-200 transition">회원가입</button>
+        <button type="button" onclick="handleSignIn()" class="flex-1 bg-indigo-600 text-white font-semibold py-2 rounded-lg text-sm hover:bg-indigo-700 transition">로그인</button>
       </div>
       <p id="auth-msg" class="text-xs text-center text-red-500 min-h-[16px]"></p>
     </section>
 
-    <!-- 2. 카테고리 필터 탭 (전체/독서/진행/단어/후기) -->
-    <section class="flex gap-2 overflow-x-auto pb-2 border-b">
-      <button onclick="setCategory('all')" id="tab-all" class="cat-tab px-4 py-2 rounded-full text-sm font-semibold bg-indigo-600 text-white shadow-sm">전체보기</button>
-      <button onclick="setCategory('reading_pages')" id="tab-reading_pages" class="cat-tab px-4 py-2 rounded-full text-sm font-semibold bg-white text-gray-600 hover:bg-gray-50 border">📖 독서 페이지</button>
-      <button onclick="setCategory('notice')" id="tab-notice" class="cat-tab px-4 py-2 rounded-full text-sm font-semibold bg-white text-gray-600 hover:bg-gray-50 border">📢 진행 여부</button>
-      <button onclick="setCategory('vocabulary')" id="tab-vocabulary" class="cat-tab px-4 py-2 rounded-full text-sm font-semibold bg-white text-gray-600 hover:bg-gray-50 border">📝 오늘의 단어</button>
-      <button onclick="setCategory('review')" id="tab-review" class="cat-tab px-4 py-2 rounded-full text-sm font-semibold bg-white text-gray-600 hover:bg-gray-50 border">🎨 모임 후기/그림</button>
+    <!-- 2. 동적 카테고리 탭 (사이트별 접속 도메인에 따라 자동 전환) -->
+    <section id="category-tabs-container" class="flex gap-2 overflow-x-auto pb-2 border-b">
+      <!-- 자바스크립트에 의해 사이트맞춤 카테고리가 동적 생성됩니다 -->
     </section>
 
     <!-- 3. 게시글 작성 폼 (로그인한 사용자에게만 표시됨) -->
@@ -73,10 +69,7 @@
         <div>
           <label class="block text-xs font-semibold text-gray-600 mb-1">카테고리</label>
           <select id="post-category" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
-            <option value="reading_pages">📖 독서 페이지</option>
-            <option value="notice">📢 진행 여부</option>
-            <option value="vocabulary">📝 오늘의 단어</option>
-            <option value="review">🎨 모임 후기/그림</option>
+            <!-- 동적 카테고리 옵션이 들어옵니다 -->
           </select>
         </div>
         <div class="md:col-span-2">
@@ -98,7 +91,7 @@
       </div>
 
       <div class="flex justify-end">
-        <button onclick="createPost()" id="submit-btn" class="bg-indigo-600 text-white font-semibold px-6 py-2 rounded-lg text-sm hover:bg-indigo-700 transition">
+        <button type="button" onclick="createPost()" id="submit-btn" class="bg-indigo-600 text-white font-semibold px-6 py-2 rounded-lg text-sm hover:bg-indigo-700 transition">
           게시하기
         </button>
       </div>
@@ -107,11 +100,7 @@
     <!-- 4. 검색 기능 (키워드 / 날짜 검색) -->
     <section class="flex flex-col md:flex-row gap-2 bg-white p-4 rounded-xl shadow-sm border">
       <select id="search-category" class="px-3 py-2 border rounded-lg text-sm bg-white">
-        <option value="all">전체 카테고리</option>
-        <option value="reading_pages">📖 독서 페이지</option>
-        <option value="notice">📢 진행 여부</option>
-        <option value="vocabulary">📝 오늘의 단어</option>
-        <option value="review">🎨 모임 후기/그림</option>
+        <!-- 동적 카테고리 옵션 -->
       </select>
 
       <select id="search-type" onchange="toggleSearchInput()" class="px-3 py-2 border rounded-lg text-sm bg-white">
@@ -124,8 +113,8 @@
       <input type="text" id="search-keyword" placeholder="검색어를 입력하세요" class="flex-1 px-3 py-2 border rounded-lg text-sm" onkeypress="if(event.key === 'Enter') executeSearch()">
       <input type="date" id="search-date" class="hidden flex-1 px-3 py-2 border rounded-lg text-sm" onkeypress="if(event.key === 'Enter') executeSearch()">
       
-      <button onclick="executeSearch()" class="bg-gray-700 text-white font-semibold px-5 py-2 rounded-lg text-sm hover:bg-gray-800 transition">검색</button>
-      <button onclick="resetSearch()" class="bg-gray-200 text-gray-700 font-semibold px-5 py-2 rounded-lg text-sm hover:bg-gray-300 transition">초기화</button>
+      <button type="button" onclick="executeSearch()" class="bg-gray-700 text-white font-semibold px-5 py-2 rounded-lg text-sm hover:bg-gray-800 transition">검색</button>
+      <button type="button" onclick="resetSearch()" class="bg-gray-200 text-gray-700 font-semibold px-5 py-2 rounded-lg text-sm hover:bg-gray-300 transition">초기화</button>
     </section>
 
     <!-- 5. 게시글 목록 출력 컨테이너 -->
@@ -135,12 +124,10 @@
 
   </main>
 
-  <!-- ==================================================================== -->
-  <!-- [FOOTER] 푸터 및 관리자 가이드 링크                                 -->
-  <!-- ==================================================================== -->
+  <!-- [FOOTER] 푸터 및 관리자 가이드 링크 -->
   <footer class="w-full bg-white border-t mt-12 py-6 text-center text-xs text-gray-400">
     <div class="max-w-4xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
-      <p>© 독서회 커뮤니티</p>
+      <p id="footer-copy">© 커뮤니티</p>
       <a href="https://github.com/gitko11111/kim#readme" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 font-semibold text-gray-500 hover:text-indigo-600 underline transition">
         ⚙️ 관리자 가이드 (GitHub README)
       </a>
@@ -148,22 +135,67 @@
   </footer>
 
   <!-- ==================================================================== -->
-  <!-- [JAVASCRIPT] 핵심 동작 로직                                           -->
+  <!-- [JAVASCRIPT] 핵심 동작 로직 및 멀티 사이트 컨트롤러                  -->
   <!-- ==================================================================== -->
   <script>
     /* --------------------------------------------------------------------
-     * [Netlify 환경변수 치환 영역]
-     * Netlify 배포 시 빌드 파이프라인(sed명령어)에 의해 아래 문구가 
-     * 각 사이트의 실제 Supabase 접속 정보로 자동 설정됩니다.
+     * [1. 멀티 사이트 타이틀 및 카테고리 설정 정의]
+     * 접속 도메인을 감지하여 사이트 이름과 카테고리를 동적으로 변경합니다.
      * -------------------------------------------------------------------- */
-    const SUPABASE_URL = "__SUPABASE_URL__";
-    const SUPABASE_KEY = "__SUPABASE_ANON_KEY__";
+    const SITE_CONFIGS = {
+      withkeke: {
+        siteId: 'withkeke',
+        title: "🐶 케케와 함께",
+        categories: [
+          { id: 'travel', label: '✈️ 여행' },
+          { id: 'daily', label: '☕ 일상' },
+          { id: 'food', label: '🍽️ 맛집' }
+        ]
+      },
+      language: {
+        siteId: 'language',
+        title: "🌐 New Language Study",
+        categories: [
+          { id: 'chinese1', label: '🇨🇳 중국어 1' },
+          { id: 'chinese2', label: '🇨🇳 중국어 2' },
+          { id: 'english1', label: '🇺🇸 영어 1' },
+          { id: 'english2', label: '🇺🇸 영어 2' },
+          { id: 'japanese', label: '🇯🇵 일본어' },
+          { id: 'spanish', label: '🇪🇸 스페인어' }
+        ]
+      }
+    };
 
-    // Supabase 클라이언트 생성
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // 현재 접속한 도메인 주소(URL)로 사이트 종류 자동 판별
+    let CURRENT_SITE_KEY = 'withkeke';
+    if (window.location.hostname.includes('language')) {
+      CURRENT_SITE_KEY = 'language';
+    }
+    const currentSiteConfig = SITE_CONFIGS[CURRENT_SITE_KEY];
 
     /* --------------------------------------------------------------------
-     * [전역 상태 변수]
+     * [2. Netlify 환경변수 및 Supabase 클라이언트 안전 생성]
+     * 빌드 시 환경변수가 치환되며, 미치환 시 예외 처리하여 버튼 먹통 방지
+     * -------------------------------------------------------------------- */
+    let rawUrl = "__SUPABASE_URL__";
+    let rawKey = "__SUPABASE_ANON_KEY__";
+
+    if (rawUrl.includes("__") || !rawUrl) {
+      rawUrl = "https://tspmpdtslcnozbbkhirs.supabase.co";
+    }
+    if (rawKey.includes("__") || !rawKey) {
+      rawKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzcG1wZHRzbGNub3piYmtoaXJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM2MTg1OTUsImV4cCI6MjA2OTE5NDU5NX0.8S-sWl53C8xL_JmG7K21K5L4I3X1C8";
+    }
+
+    let supabaseClient = null;
+    try {
+      supabaseClient = supabase.createClient(rawUrl, rawKey);
+    } catch(e) {
+      console.error("Supabase 생성 에러:", e);
+    }
+
+    /* --------------------------------------------------------------------
+     * [3. 전역 상태 변수]
      * -------------------------------------------------------------------- */
     let currentCategory = 'all';        // 현재 선택된 카테고리 탭
     let currentUser = null;            // 현재 로그인된 사용자 정보
@@ -178,9 +210,10 @@
     const loadedPostsMap = {};
 
     /* --------------------------------------------------------------------
-     * [초기화] 페이지 로드 시 사용자 인증 상태 확인 및 게시글 불러오기
+     * [4. 초기화] DOM 로드 시 사이트 UI 구성, 사용자 인증 확인 및 게시글 로드
      * -------------------------------------------------------------------- */
     window.addEventListener('DOMContentLoaded', async () => {
+      initSiteUI();
       try {
         await checkAuth();
       } catch (e) {
@@ -189,10 +222,43 @@
       loadPosts();
     });
 
+    // 사이트별 UI 동적 세팅 (타이틀, 카테고리 탭, 드롭다운 옵션)
+    function initSiteUI() {
+      document.getElementById('site-page-title').innerText = currentSiteConfig.title;
+      document.getElementById('site-header-title').innerHTML = currentSiteConfig.title;
+      document.getElementById('footer-copy').innerText = `© ${currentSiteConfig.title}`;
+
+      // 카테고리 탭 생성 (전체 + 사이트별 카테고리)
+      const tabsContainer = document.getElementById('category-tabs-container');
+      let tabsHtml = `<button type="button" onclick="setCategory('all')" id="tab-all" class="cat-tab px-4 py-2 rounded-full text-sm font-semibold bg-indigo-600 text-white shadow-sm shrink-0">전체</button>`;
+      
+      currentSiteConfig.categories.forEach(cat => {
+        tabsHtml += `<button type="button" onclick="setCategory('${cat.id}')" id="tab-${cat.id}" class="cat-tab px-4 py-2 rounded-full text-sm font-semibold bg-white text-gray-600 hover:bg-gray-50 border shrink-0">${cat.label}</button>`;
+      });
+      tabsContainer.innerHTML = tabsHtml;
+
+      // 글 작성 카테고리 드롭다운 생성
+      const postCatSelect = document.getElementById('post-category');
+      let postCatHtml = '';
+      currentSiteConfig.categories.forEach(cat => {
+        postCatHtml += `<option value="${cat.id}">${cat.label}</option>`;
+      });
+      postCatSelect.innerHTML = postCatHtml;
+
+      // 검색 카테고리 드롭다운 생성
+      const searchCatSelect = document.getElementById('search-category');
+      let searchCatHtml = `<option value="all">전체 카테고리</option>`;
+      currentSiteConfig.categories.forEach(cat => {
+        searchCatHtml += `<option value="${cat.id}">${cat.label}</option>`;
+      });
+      searchCatSelect.innerHTML = searchCatHtml;
+    }
+
     /* --------------------------------------------------------------------
-     * [인증 관련 기능] checkAuth, handleSignUp, handleSignIn, handleSignOut
+     * [5. 인증 관련 기능] checkAuth, handleSignUp, handleSignIn, handleSignOut
      * -------------------------------------------------------------------- */
     async function checkAuth() {
+      if (!supabaseClient) return;
       try {
         const { data } = await supabaseClient.auth.getUser();
         currentUser = data?.user || null;
@@ -209,17 +275,15 @@
       const writeSectionEl = document.getElementById('write-section');
 
       if (currentUser) {
-        // 로그인 상태일 때 상단 바 및 작성 폼 활성화
         authStatusEl.innerHTML = `
           <span class="text-xs text-gray-600 font-medium">👤 ${escapeHtml(userDisplayName)} 님</span>
-          <button onclick="handleSignOut()" class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1.5 rounded-lg transition">로그아웃</button>
+          <button type="button" onclick="handleSignOut()" class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1.5 rounded-lg transition">로그아웃</button>
         `;
         authSectionEl.classList.add('hidden');
         writeSectionEl.classList.remove('hidden');
       } else {
-        // 비로그인 상태일 때
         authStatusEl.innerHTML = `
-          <button onclick="toggleAuthForm()" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold transition">로그인 / 회원가입</button>
+          <button type="button" onclick="toggleAuthForm()" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold transition">로그인 / 회원가입</button>
         `;
         writeSectionEl.classList.add('hidden');
       }
@@ -282,16 +346,16 @@
     }
 
     /* --------------------------------------------------------------------
-     * [카테고리 및 검색 제어 함수]
+     * [6. 카테고리 및 검색 제어 함수]
      * -------------------------------------------------------------------- */
     function setCategory(cat) {
       currentCategory = cat;
       document.querySelectorAll('.cat-tab').forEach(btn => {
-        btn.className = "cat-tab px-4 py-2 rounded-full text-sm font-semibold bg-white text-gray-600 hover:bg-gray-50 border";
+        btn.className = "cat-tab px-4 py-2 rounded-full text-sm font-semibold bg-white text-gray-600 hover:bg-gray-50 border shrink-0";
       });
       const activeBtn = document.getElementById(`tab-${cat}`);
       if(activeBtn) {
-        activeBtn.className = "cat-tab px-4 py-2 rounded-full text-sm font-semibold bg-indigo-600 text-white shadow-sm";
+        activeBtn.className = "cat-tab px-4 py-2 rounded-full text-sm font-semibold bg-indigo-600 text-white shadow-sm shrink-0";
       }
 
       document.getElementById('search-category').value = cat;
@@ -328,11 +392,11 @@
 
       currentCategory = currentSearchCategory;
       document.querySelectorAll('.cat-tab').forEach(btn => {
-        btn.className = "cat-tab px-4 py-2 rounded-full text-sm font-semibold bg-white text-gray-600 hover:bg-gray-50 border";
+        btn.className = "cat-tab px-4 py-2 rounded-full text-sm font-semibold bg-white text-gray-600 hover:bg-gray-50 border shrink-0";
       });
       const activeBtn = document.getElementById(`tab-${currentCategory}`);
       if(activeBtn) {
-        activeBtn.className = "cat-tab px-4 py-2 rounded-full text-sm font-semibold bg-indigo-600 text-white shadow-sm";
+        activeBtn.className = "cat-tab px-4 py-2 rounded-full text-sm font-semibold bg-indigo-600 text-white shadow-sm shrink-0";
       }
 
       loadPosts();
@@ -354,8 +418,8 @@
     }
 
     /* --------------------------------------------------------------------
-     * [유튜브 주소 감지 및 Embed 플레이어 생성 함수]
-     * 본문이나 댓글 내의 YouTube 링크(Shorts, watch, youtu.be)를 임베드 파스
+     * [7. 유튜브 주소 감지 및 Embed 플레이어 생성 함수]
+     * 본문이나 댓글 내의 YouTube 링크(Shorts, watch, youtu.be)를 임베드 파싱
      * -------------------------------------------------------------------- */
     function getYouTubeEmbedsHtml(content) {
       if (!content) return '';
@@ -396,6 +460,536 @@
     }
 
     /* --------------------------------------------------------------------
-     * [첨부파일 파서 및 HTML 생성 함수]
+     * [8. 첨부파일 파서 및 HTML 생성 함수]
      * DB의 image_url/attachments 컬럼(JSON, JSONB, 단일 URL)의 구조를 정규화
-     * 사진, 음악, 동영상, PDF, 일반 문서 형식에 맞춰 렌더링
+     * 사진, 음악, 동영상, PDF, 일반 문서 형식에 맞춰 UI를 렌더링합니다.
+     * -------------------------------------------------------------------- */
+    function parseAttachments(raw) {
+      if (!raw) return [];
+      if (Array.isArray(raw)) return raw;
+      if (typeof raw === 'object') return [raw];
+      if (typeof raw === 'string') {
+        const trimmed = raw.trim();
+        if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+          try {
+            const parsed = JSON.parse(trimmed);
+            return Array.isArray(parsed) ? parsed : [parsed];
+          } catch(e) {
+            return [{ name: '첨부파일', url: trimmed, type: 'image/jpeg' }];
+          }
+        } else if (trimmed) {
+          return [{ name: '첨부파일', url: trimmed, type: 'image/jpeg' }];
+        }
+      }
+      return [];
+    }
+
+    function getAttachmentsHtml(rawData) {
+      const attachments = parseAttachments(rawData);
+      if (attachments.length === 0) return '';
+
+      let html = '<div class="pt-2 space-y-3">';
+      attachments.forEach((att) => {
+        const type = att.type || '';
+        const name = escapeHtml(att.name || '첨부파일');
+        const url = att.url;
+
+        // 1. 이미지 파일 (사진)
+        if (type.startsWith('image/')) {
+          html += `
+            <div class="space-y-1.5">
+              <a href="${url}" target="_blank" rel="noopener noreferrer" class="block relative overflow-hidden rounded-xl border bg-slate-900/5 flex justify-center items-center cursor-pointer">
+                <img src="${url}" alt="${name}" class="max-h-[500px] w-auto object-contain hover:scale-[1.01] transition duration-200">
+              </a>
+              <div class="flex justify-between items-center text-[11px] text-gray-500 px-1">
+                <a href="${url}" target="_blank" rel="noopener noreferrer" class="truncate hover:underline text-indigo-600 font-semibold">🖼️ ${name} (🔍 원본보기)</a>
+                <a href="${url}" download="${name}" target="_blank" class="inline-flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-2 py-1 rounded transition shrink-0">
+                  📥 다운로드
+                </a>
+              </div>
+            </div>`;
+        } 
+        // 2. 오디오 파일 (음악/녹음)
+        else if (type.startsWith('audio/')) {
+          html += `
+            <div class="bg-purple-50 p-2.5 rounded-xl border border-purple-100 space-y-1">
+              <div class="flex justify-between items-center text-[11px] font-semibold text-purple-700">
+                <span class="truncate">🎵 ${name}</span>
+                <a href="${url}" download="${name}" target="_blank" class="text-purple-600 hover:underline shrink-0">📥 다운로드</a>
+              </div>
+              <audio controls class="w-full h-8">
+                <source src="${url}" type="${type}">
+              </audio>
+            </div>`;
+        } 
+        // 3. 비디오 파일 (동영상)
+        else if (type.startsWith('video/')) {
+          html += `
+            <div class="bg-black/5 p-2.5 rounded-xl border space-y-1">
+              <div class="flex justify-between items-center text-[11px] font-semibold text-gray-700">
+                <span class="truncate">🎬 ${name}</span>
+                <a href="${url}" download="${name}" target="_blank" class="text-indigo-600 hover:underline shrink-0">📥 다운로드</a>
+              </div>
+              <video controls class="w-full max-h-[450px] rounded-lg">
+                <source src="${url}" type="${type}">
+              </video>
+            </div>`;
+        } 
+        // 4. PDF 문서
+        else if (type === 'application/pdf') {
+          html += `
+            <div class="flex justify-between items-center p-2.5 bg-red-50 rounded-xl border border-red-100 text-[11px]">
+              <div class="flex items-center gap-1.5 truncate pr-2">
+                <span>📄</span>
+                <span class="font-medium text-red-700 truncate">${name}</span>
+              </div>
+              <div class="flex gap-1.5 shrink-0">
+                <a href="${url}" target="_blank" rel="noopener noreferrer" class="bg-red-600 hover:bg-red-700 text-white font-semibold px-2.5 py-1 rounded transition">
+                  📄 PDF 보기
+                </a>
+                <a href="${url}" download="${name}" target="_blank" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-2 py-1 rounded transition">
+                  📥 다운로드
+                </a>
+              </div>
+            </div>`;
+        } 
+        // 5. 기타 다운로드 파일 (ZIP, 문서 등)
+        else {
+          html += `
+            <div class="flex justify-between items-center p-2.5 bg-gray-50 rounded-xl border text-[11px]">
+              <div class="flex items-center gap-1.5 truncate pr-2">
+                <span>💾</span>
+                <span class="font-medium text-gray-700 truncate">${name}</span>
+              </div>
+              <a href="${url}" download="${name}" target="_blank" class="shrink-0 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-2.5 py-1 rounded transition">
+                📥 다운로드
+              </a>
+            </div>`;
+        }
+      });
+      html += '</div>';
+      return html;
+    }
+
+    /* --------------------------------------------------------------------
+     * [9. 이미지 클라이언트 측 스마트 압축 함수]
+     * Canvas API를 이용해 대용량 이미지를 브라우저단에서 1200px / Quality 0.8로 축소
+     * (500KB 이하 이미지는 압축을 건너뛰어 품질을 보존합니다)
+     * -------------------------------------------------------------------- */
+    async function compressImage(file) {
+      return new Promise((resolve) => {
+        if (!file.type.startsWith('image/') || file.type.includes('svg') || file.size <= 500 * 1024) {
+          resolve(file);
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (e) => {
+          const img = new Image();
+          img.src = e.target.result;
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            const maxDim = 1200;
+
+            if (width > maxDim || height > maxDim) {
+              if (width > height) {
+                height = Math.round((height * maxDim) / width);
+                width = maxDim;
+              } else {
+                width = Math.round((width * maxDim) / height);
+                height = maxDim;
+              }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            canvas.toBlob((blob) => {
+              if (!blob) {
+                resolve(file);
+                return;
+              }
+              const compressedFile = new File([blob], file.name, {
+                type: 'image/jpeg',
+                lastModified: Date.now()
+              });
+              resolve(compressedFile);
+            }, 'image/jpeg', 0.80);
+          };
+          img.onerror = () => resolve(file);
+        };
+        reader.onerror = () => resolve(file);
+      });
+    }
+
+    /* --------------------------------------------------------------------
+     * [10. 공통 파일 업로드 처리 함수]
+     * 게시글 및 댓글에서 전달받은 파일 배열을 압축 후 Storage에 등록
+     * -------------------------------------------------------------------- */
+    async function uploadFilesToStorage(files, bucketName = 'files', prefix = 'file') {
+      const attachments = [];
+
+      for (let i = 0; i < files.length; i++) {
+        let file = files[i];
+
+        if (file.type.startsWith('image/')) {
+          file = await compressImage(file);
+        }
+
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2,7)}.${fileExt}`;
+
+        const { error: uploadError } = await supabaseClient.storage.from(bucketName).upload(fileName, file);
+        if (uploadError) {
+          throw new Error(`'${file.name}' 업로드 실패: ` + uploadError.message);
+        }
+
+        const { data: publicUrlData } = supabaseClient.storage.from(bucketName).getPublicUrl(fileName);
+        attachments.push({
+          name: file.name,
+          url: publicUrlData.publicUrl,
+          type: file.type
+        });
+      }
+
+      return attachments;
+    }
+
+    /* --------------------------------------------------------------------
+     * [11. 게시글 등록 / 목록 불러오기 / 수정 / 삭제]
+     * -------------------------------------------------------------------- */
+    async function createPost() {
+      const category = document.getElementById('post-category').value;
+      const title = document.getElementById('post-title').value.trim();
+      const content = document.getElementById('post-content').value.trim();
+      const fileInput = document.getElementById('post-files');
+      const submitBtn = document.getElementById('submit-btn');
+
+      if(!title || !content) {
+        alert("제목과 내용을 입력해주세요.");
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.innerText = "업로드 중...";
+
+      const files = Array.from(fileInput.files);
+
+      try {
+        let attachments = [];
+        if (files.length > 0) {
+          attachments = await uploadFilesToStorage(files, 'files', 'post');
+        }
+
+        const imageUrlValue = attachments.length > 0 ? JSON.stringify(attachments) : null;
+
+        const { error: dbError } = await supabaseClient
+          .from('posts')
+          .insert([{ category, title, content, image_url: imageUrlValue }]);
+
+        if (dbError) {
+          alert("글 저장 실패: " + dbError.message);
+        } else {
+          document.getElementById('post-title').value = '';
+          document.getElementById('post-content').value = '';
+          fileInput.value = '';
+          loadPosts();
+        }
+      } catch (e) {
+        alert("게시물 등록 중 오류 발생: " + e.message);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = "게시하기";
+      }
+    }
+
+    async function loadPosts() {
+      const container = document.getElementById('posts-container');
+      if (!container) return;
+      container.innerHTML = `<div class="text-center py-12 text-gray-400">게시글을 불러오는 중...</div>`;
+
+      try {
+        let query = supabaseClient.from('posts').select('*').order('created_at', { ascending: false });
+
+        if (currentCategory !== 'all') {
+          query = query.eq('category', currentCategory);
+        } else {
+          // 전체 선택 시 현재 사이트 카테고리의 글만 필터링해서 표시
+          const validCatIds = currentSiteConfig.categories.map(c => c.id);
+          query = query.in('category', validCatIds);
+        }
+
+        if (currentSearchType !== 'date' && currentSearchKeyword) {
+          if (currentSearchType === 'all') {
+            query = query.or(`title.ilike.%${currentSearchKeyword}%,content.ilike.%${currentSearchKeyword}%`);
+          } else if (currentSearchType === 'title') {
+            query = query.ilike('title', `%${currentSearchKeyword}%`);
+          } else if (currentSearchType === 'content') {
+            query = query.ilike('content', `%${currentSearchKeyword}%`);
+          }
+        }
+
+        if (currentSearchType === 'date' && currentSearchDate) {
+          const startDate = new Date(currentSearchDate);
+          startDate.setHours(0, 0, 0, 0);
+          const endDate = new Date(currentSearchDate);
+          endDate.setHours(23, 59, 59, 999);
+
+          query = query.gte('created_at', startDate.toISOString())
+                       .lte('created_at', endDate.toISOString());
+        }
+
+        const { data: posts, error } = await query;
+
+        if (error) {
+          container.innerHTML = `<div class="bg-white p-8 rounded-2xl border text-center text-red-500">⚠️ 불러오기 실패: ${escapeHtml(error.message)}</div>`;
+          return;
+        }
+
+        const categoryLabels = {};
+        currentSiteConfig.categories.forEach(c => { categoryLabels[c.id] = c.label; });
+
+        if (!posts || posts.length === 0) {
+          container.innerHTML = `<div class="bg-white p-12 rounded-2xl border text-center text-gray-400">등록된 게시글이 없습니다.</div>`;
+          return;
+        }
+
+        posts.forEach(p => { loadedPostsMap[p.id] = p; });
+
+        const postHtmlPromises = posts.map(async (post) => {
+          const dateStr = new Date(post.created_at).toLocaleString('ko-KR', {
+            year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+          });
+
+          let comments = [];
+          try {
+            const { data: commentData } = await supabaseClient
+              .from('comments')
+              .select('*')
+              .eq('post_id', post.id)
+              .order('created_at', { ascending: true });
+            if (commentData) comments = commentData;
+          } catch (e) {}
+
+          const commentsListHtml = comments && comments.length > 0 
+            ? comments.map(c => {
+                let authorDisplay = c.user_email || '익명';
+                if (authorDisplay.includes('@')) authorDisplay = authorDisplay.split('@')[0];
+                const commentYtEmbed = getYouTubeEmbedsHtml(c.content);
+                const commentAttachments = getAttachmentsHtml(c.image_url);
+
+                return `
+                  <div class="bg-slate-50 p-3 rounded-xl text-xs space-y-2 border">
+                    <div class="flex justify-between font-semibold text-gray-700">
+                      <span>👤 ${escapeHtml(authorDisplay)}</span>
+                      <span class="text-gray-400 font-normal text-[11px]">${new Date(c.created_at).toLocaleString('ko-KR')}</span>
+                    </div>
+                    ${c.content ? `<p class="text-gray-600 whitespace-pre-wrap leading-relaxed">${escapeHtml(c.content)}</p>` : ''}
+                    ${commentYtEmbed}
+                    ${commentAttachments}
+                  </div>
+                `;
+              }).join('')
+            : '<p class="text-xs text-gray-400 text-center py-2">등록된 댓글이 없습니다.</p>';
+
+          const postYtEmbed = getYouTubeEmbedsHtml(post.content);
+          const postAttachments = getAttachmentsHtml(post.image_url);
+
+          return `
+            <article class="bg-white p-6 rounded-2xl shadow-sm border space-y-4" id="post-article-${post.id}">
+              <div class="flex justify-between items-start">
+                <span class="inline-block px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-semibold rounded-full">
+                  ${categoryLabels[post.category] || post.category}
+                </span>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-gray-400">${dateStr}</span>
+                  ${currentUser ? `
+                    <button type="button" onclick="openEditForm(${post.id})" class="text-xs text-blue-500 hover:text-blue-700 font-semibold px-2 py-1 rounded border border-blue-200">✏️ 수정</button>
+                    <button type="button" onclick="deletePost(${post.id})" class="text-xs text-red-500 hover:text-red-700 font-semibold px-2 py-1 rounded border border-red-200">🗑️ 삭제</button>
+                  ` : ''}
+                </div>
+              </div>
+
+              <div id="post-view-${post.id}" class="space-y-4">
+                <h3 class="text-lg font-bold text-gray-800">${escapeHtml(post.title)}</h3>
+                <p class="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">${escapeHtml(post.content)}</p>
+                ${postYtEmbed}
+                ${postAttachments}
+              </div>
+
+              <div class="pt-4 border-t space-y-3">
+                <h5 class="text-xs font-bold text-gray-700">💬 댓글</h5>
+                <div class="space-y-2">${commentsListHtml}</div>
+                ${currentUser ? `
+                  <div class="pt-2 border-t space-y-2">
+                    <input type="text" id="comment-input-${post.id}" placeholder="댓글 내용 (유튜브 주소 자동 변환)" class="w-full px-3 py-1.5 border rounded-lg text-xs" onkeypress="if(event.key === 'Enter') addComment(${post.id})">
+                    <div class="flex items-center justify-between gap-2">
+                      <input type="file" id="comment-files-${post.id}" multiple accept="image/*, audio/*, video/*, application/pdf, .zip, .docx, .xlsx, .pptx, .hwp" class="text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 flex-1">
+                      <button type="button" onclick="addComment(${post.id})" id="comment-submit-btn-${post.id}" class="bg-indigo-600 text-white text-xs font-semibold px-4 py-1.5 rounded-lg hover:bg-indigo-700 shrink-0">등록</button>
+                    </div>
+                  </div>
+                ` : `
+                  <p class="text-xs text-gray-400 text-center">댓글을 작성하려면 로그인이 필요합니다.</p>
+                `}
+              </div>
+            </article>
+          `;
+        });
+
+        const postsHtmlArray = await Promise.all(postHtmlPromises);
+        container.innerHTML = postsHtmlArray.join('');
+      } catch (err) {
+        container.innerHTML = `<div class="bg-white p-8 rounded-2xl border text-center text-red-500">⚠️ 오류: ${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    async function addComment(postId) {
+      if (!currentUser) {
+        alert("로그인이 필요합니다.");
+        return;
+      }
+
+      const inputEl = document.getElementById(`comment-input-${postId}`);
+      const fileInput = document.getElementById(`comment-files-${postId}`);
+      const submitBtn = document.getElementById(`comment-submit-btn-${postId}`);
+      const content = inputEl.value.trim();
+
+      const files = fileInput && fileInput.files ? Array.from(fileInput.files) : [];
+
+      if (!content && files.length === 0) {
+        alert("댓글 내용이나 파일을 입력해주세요.");
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.innerText = "등록 중...";
+
+      try {
+        let attachments = [];
+        if (files.length > 0) {
+          attachments = await uploadFilesToStorage(files, 'files', 'comment');
+        }
+
+        const authorName = userDisplayName || currentUser.email.split('@')[0];
+        const imageUrlValue = attachments.length > 0 ? JSON.stringify(attachments) : null;
+
+        const payload = { post_id: postId, user_email: authorName, content };
+        if (imageUrlValue) {
+          payload.image_url = imageUrlValue;
+        }
+
+        const { error } = await supabaseClient
+          .from('comments')
+          .insert([payload]);
+
+        if (error) {
+          alert("댓글 작성 실패: " + error.message);
+        } else {
+          inputEl.value = '';
+          if(fileInput) fileInput.value = '';
+          loadPosts();
+        }
+      } catch (e) {
+        alert("댓글 등록 중 오류 발생: " + e.message);
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerText = "등록";
+        }
+      }
+    }
+
+    async function deletePost(postId) {
+      if (!currentUser || !confirm("정말로 삭제하시겠습니까?")) return;
+
+      try {
+        const { error } = await supabaseClient.from('posts').delete().eq('id', postId);
+        if (error) alert("삭제 실패: " + error.message);
+        else loadPosts();
+      } catch (err) {
+        alert("삭제 중 오류 발생");
+      }
+    }
+
+    /* --------------------------------------------------------------------
+     * [12. 유틸리티] HTML 이스케이프 함수 (XSS 방지)
+     * -------------------------------------------------------------------- */
+    function escapeHtml(str) {
+      if(!str) return '';
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    /* --------------------------------------------------------------------
+     * [13. 게시글 수정 폼 제어 함수]
+     * openEditForm: loadedPostsMap 메모리에서 안전하게 가져와 따옴표 버그 방지
+     * -------------------------------------------------------------------- */
+    function openEditForm(postId) {
+      const post = loadedPostsMap[postId];
+      if (!post) {
+        alert("게시글 정보를 찾을 수 없습니다.");
+        return;
+      }
+
+      const viewEl = document.getElementById(`post-view-${postId}`);
+      if (!viewEl) return;
+
+      viewEl.innerHTML = `
+        <div class="bg-indigo-50/60 p-4 rounded-xl border border-indigo-100 space-y-3">
+          <h4 class="text-sm font-bold text-indigo-700 flex items-center gap-1">✏️ 게시글 수정</h4>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">제목</label>
+            <input type="text" id="edit-title-${postId}" class="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">내용</label>
+            <textarea id="edit-content-${postId}" rows="4" class="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+          </div>
+          <div class="flex justify-end gap-2 pt-2">
+            <button type="button" onclick="cancelEdit()" class="bg-gray-200 text-gray-700 font-semibold px-4 py-1.5 rounded-lg text-sm hover:bg-gray-300 transition">취소</button>
+            <button type="button" onclick="updatePost(${postId})" id="edit-submit-btn-${postId}" class="bg-indigo-600 text-white font-semibold px-4 py-1.5 rounded-lg text-sm hover:bg-indigo-700 transition">저장</button>
+          </div>
+        </div>
+      `;
+
+      document.getElementById(`edit-title-${postId}`).value = post.title || '';
+      document.getElementById(`edit-content-${postId}`).value = post.content || '';
+    }
+
+    function cancelEdit() {
+      loadPosts(); 
+    }
+
+    async function updatePost(postId) {
+      const title = document.getElementById(`edit-title-${postId}`).value.trim();
+      const content = document.getElementById(`edit-content-${postId}`).value.trim();
+      const submitBtn = document.getElementById(`edit-submit-btn-${postId}`);
+
+      if (!title || !content) {
+        alert("제목과 내용을 모두 입력해주세요.");
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.innerText = "저장 중...";
+
+      const { error } = await supabaseClient
+        .from('posts')
+        .update({ title: title, content: content })
+        .eq('id', postId);
+
+      if (error) {
+        alert("수정 실패: " + error.message);
+        submitBtn.disabled = false;
+        submitBtn.innerText = "저장";
+      } else {
+        loadPosts(); 
+      }
+    }
+  </script>
+</body>
+</html>
