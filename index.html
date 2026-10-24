@@ -76,7 +76,7 @@
       <!-- 다중 파일 첨부 -->
       <div>
         <label class="block text-xs font-semibold text-gray-600 mb-1">
-          📎 파일 첨부 (사진 자동 용량 축소, 음악, 동영상, PDF, 일반 문서 등 다중 선택 가능)
+          📎 파일 첨부 (사진 자동 용량 축소, 음악, 동영상, PDF 등 다중 선택 가능)
         </label>
         <input type="file" id="post-files" multiple accept="image/*, audio/*, video/*, application/pdf, .zip, .docx, .xlsx, .pptx, .hwp, .hwpx" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
       </div>
@@ -88,8 +88,8 @@
       </div>
     </section>
 
-    <!-- 4. 검색 기능 -->
-    <section class="flex flex-col md:flex-row gap-2 bg-white p-4 rounded-xl shadow-sm border">
+    <!-- 4. 검색 기능 및 자동완성 -->
+    <section class="flex flex-col md:flex-row gap-2 bg-white p-4 rounded-xl shadow-sm border relative">
       <select id="search-category" class="px-3 py-2 border rounded-lg text-sm bg-white">
       </select>
 
@@ -100,10 +100,19 @@
         <option value="date">날짜 (달력)</option>
       </select>
       
-      <input type="text" id="search-keyword" placeholder="검색어를 입력하세요" class="flex-1 px-3 py-2 border rounded-lg text-sm" onkeypress="if(event.key === 'Enter') executeSearch()">
+      <div class="relative flex-1">
+        <input type="text" id="search-keyword" placeholder="검색어를 입력하세요" class="w-full px-3 py-2 border rounded-lg text-sm" oninput="handleKeywordInput()" onfocus="handleKeywordInput()" onkeypress="if(event.key === 'Enter') executeSearch()">
+        <!-- 검색어 자동완성 드롭다운 -->
+        <div id="search-autocomplete-box" class="absolute left-0 right-0 top-full mt-1 bg-white border rounded-xl shadow-lg z-50 hidden max-h-48 overflow-y-auto"></div>
+      </div>
+
       <input type="date" id="search-date" class="hidden flex-1 px-3 py-2 border rounded-lg text-sm" onkeypress="if(event.key === 'Enter') executeSearch()">
       
       <button type="button" onclick="executeSearch()" class="bg-gray-700 text-white font-semibold px-5 py-2 rounded-lg text-sm hover:bg-gray-800 transition">검색</button>
+      
+      <!-- 🔀 랜덤 버튼 -->
+      <button type="button" onclick="executeRandomSearch()" class="bg-amber-600 text-white font-semibold px-5 py-2 rounded-lg text-sm hover:bg-amber-700 transition shrink-0">🔀 랜덤</button>
+      
       <button type="button" onclick="resetSearch()" class="bg-gray-200 text-gray-700 font-semibold px-5 py-2 rounded-lg text-sm hover:bg-gray-300 transition">초기화</button>
     </section>
 
@@ -175,17 +184,26 @@
     let currentSearchKeyword = '';
     let currentSearchDate = '';
 
+    let allSearchKeywordsHistory = []; // 검색어 기록 저장용
     const loadedPostsMap = {};
 
     window.addEventListener('DOMContentLoaded', async () => {
       initSiteUI();
       try {
         await checkAuth();
-      } catch (e) {
-        console.error("인증 확인 중 에러 발생:", e);
-      }
+      } catch (e) {}
+      await loadPostsForAutocomplete();
       loadPosts();
-    });
+      
+      // 외부 클릭 시 자동완성 닫기
+      document.addEventListener('click', (e) => {
+        const box = document.getElementById('search-autocomplete-box');
+        const input = document.getElementById('search-keyword');
+        if (box && input && !box.contains(e.target) && e.target !== input) {
+          box.classList.add('hidden');
+        }
+      });
+    }
 
     function initSiteUI() {
       document.getElementById('site-page-title').innerText = currentSiteConfig.title;
@@ -323,14 +341,72 @@
       const type = document.getElementById('search-type').value;
       const keywordInput = document.getElementById('search-keyword');
       const dateInput = document.getElementById('search-date');
+      const autocompleteBox = document.getElementById('search-autocomplete-box');
 
       if (type === 'date') {
         keywordInput.classList.add('hidden');
         dateInput.classList.remove('hidden');
+        if(autocompleteBox) autocompleteBox.classList.add('hidden');
       } else {
         keywordInput.classList.remove('hidden');
         dateInput.classList.add('hidden');
       }
+    }
+
+    // 🔍 검색어 자동완성 데이터 수집 및 표시
+    async function loadPostsForAutocomplete() {
+      try {
+        const { data: posts } = await supabaseClient.from('posts').select('title');
+        if (!posts) return;
+
+        const wordCounts = {};
+        posts.forEach(p => {
+          if (!p.title) return;
+          // 단어 단위 또는 의미있는 명칭 추출 (공백 기준 분리 및 2글자 이상)
+          const words = p.title.replace(/[^\w\s가-힣]/g, '').split(/\s+/);
+          words.forEach(w => {
+            const cleanW = w.trim();
+            if (cleanW.length >= 2) {
+              wordCounts[cleanW] = (wordCounts[cleanW] || 0) + 1;
+            }
+          });
+        });
+
+        // 2회 이상 검색/등장한 키워드 필터링 후 정렬
+        allSearchKeywordsHistory = Object.keys(wordCounts)
+          .filter(w => wordCounts[w] >= 2)
+          .sort((a, b) => wordCounts[b] - wordCounts[a]);
+      } catch (e) {}
+    }
+
+    function handleKeywordInput() {
+      const inputVal = document.getElementById('search-keyword').value.trim().toLowerCase();
+      const box = document.getElementById('search-autocomplete-box');
+      if (!box) return;
+
+      const filtered = allSearchKeywordsHistory.filter(kw => kw.toLowerCase().includes(inputVal));
+
+      if (filtered.length === 0) {
+        box.classList.add('hidden');
+        return;
+      }
+
+      let html = '';
+      filtered.slice(0, 8).forEach(kw => {
+        html += `<div onclick="selectKeyword('${escapeHtml(kw)}')" class="px-4 py-2 text-xs text-gray-700 hover:bg-indigo-50 cursor-pointer border-b last:border-b-0 flex items-center justify-between">
+          <span>🔍 ${escapeHtml(kw)}</span>
+          <span class="text-[10px] text-indigo-500 font-semibold">추천 검색어</span>
+        </div>`;
+      });
+
+      box.innerHTML = html;
+      box.classList.remove('hidden');
+    }
+
+    function selectKeyword(kw) {
+      document.getElementById('search-keyword').value = kw;
+      document.getElementById('search-autocomplete-box').classList.add('hidden');
+      executeSearch();
     }
 
     function executeSearch() {
@@ -345,6 +421,9 @@
         currentSearchDate = '';
       }
 
+      const box = document.getElementById('search-autocomplete-box');
+      if (box) box.classList.add('hidden');
+
       currentCategory = currentSearchCategory;
       document.querySelectorAll('.cat-tab').forEach(btn => {
         btn.className = "cat-tab px-4 py-2 rounded-full text-sm font-semibold bg-white text-gray-600 hover:bg-gray-50 border shrink-0";
@@ -357,618 +436,82 @@
       loadPosts();
     }
 
-    function resetSearch() {
-      document.getElementById('search-category').value = 'all';
-      document.getElementById('search-type').value = 'all';
-      document.getElementById('search-keyword').value = '';
-      document.getElementById('search-date').value = '';
-      
-      currentSearchCategory = 'all';
-      currentSearchType = 'all';
-      currentSearchKeyword = '';
-      currentSearchDate = '';
-
-      toggleSearchInput();
-      setCategory('all');
-    }
-
-    function getYouTubeEmbedsHtml(content) {
-      if (!content) return '';
-      const ytRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/g;
-      const videoIds = new Set();
-      let match;
-      while ((match = ytRegex.exec(content)) !== null) {
-        videoIds.add(match[1]);
-      }
-
-      if (videoIds.size === 0) return '';
-
-      let html = '<div class="space-y-3 pt-2">';
-      videoIds.forEach(id => {
-        html += `
-          <div class="space-y-1">
-            <div class="relative w-full aspect-video rounded-xl overflow-hidden shadow-sm border bg-black">
-              <iframe 
-                class="absolute top-0 left-0 w-full h-full"
-                src="https://www.youtube.com/embed/${id}" 
-                title="YouTube video player" 
-                frameborder="0" 
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                allowfullscreen>
-              </iframe>
-            </div>
-            <div class="flex justify-between items-center text-[11px] px-1">
-              <span class="text-gray-400">💡 유튜브 영상 자동 감지됨</span>
-              <a href="https://www.youtube.com/watch?v=${id}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 font-semibold hover:underline">
-                ↗️ YouTube에서 크게 보기
-              </a>
-            </div>
-          </div>
-        `;
-      });
-      html += '</div>';
-      return html;
-    }
-
-    function parseAttachments(raw) {
-      if (!raw) return [];
-      if (Array.isArray(raw)) return raw;
-      if (typeof raw === 'object') return [raw];
-      if (typeof raw === 'string') {
-        const trimmed = raw.trim();
-        if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
-          try {
-            const parsed = JSON.parse(trimmed);
-            return Array.isArray(parsed) ? parsed : [parsed];
-          } catch(e) {
-            return [{ name: '첨부파일', url: trimmed, type: 'image/jpeg' }];
-          }
-        } else if (trimmed) {
-          return [{ name: '첨부파일', url: trimmed, type: 'image/jpeg' }];
-        }
-      }
-      return [];
-    }
-
-    function getAttachmentsHtml(rawData) {
-      const attachments = parseAttachments(rawData);
-      if (attachments.length === 0) return '';
-
-      let html = '<div class="pt-2 space-y-3">';
-      attachments.forEach((att) => {
-        const type = att.type || '';
-        const name = escapeHtml(att.name || '첨부파일');
-        const url = att.url;
-
-        if (type.startsWith('image/')) {
-          html += `
-            <div class="space-y-1.5">
-              <a href="${url}" target="_blank" rel="noopener noreferrer" class="block relative overflow-hidden rounded-xl border bg-slate-900/5 flex justify-center items-center cursor-pointer">
-                <img src="${url}" alt="${name}" class="max-h-[500px] w-auto object-contain hover:scale-[1.01] transition duration-200">
-              </a>
-              <div class="flex justify-between items-center text-[11px] text-gray-500 px-1">
-                <a href="${url}" target="_blank" rel="noopener noreferrer" class="truncate hover:underline text-indigo-600 font-semibold">🖼️ ${name} (🔍 원본)</a>
-                <a href="${url}" download="${name}" target="_blank" class="inline-flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-2 py-1 rounded transition shrink-0">
-                  📥 다운로드
-                </a>
-              </div>
-            </div>`;
-        } 
-        else if (type.startsWith('audio/')) {
-          html += `
-            <div class="bg-purple-50 p-2.5 rounded-xl border border-purple-100 space-y-1">
-              <div class="flex justify-between items-center text-[11px] font-semibold text-purple-700">
-                <span class="truncate">🎵 ${name}</span>
-                <a href="${url}" download="${name}" target="_blank" class="text-purple-600 hover:underline shrink-0">📥 다운로드</a>
-              </div>
-              <audio controls class="w-full h-8">
-                <source src="${url}" type="${type}">
-              </audio>
-            </div>`;
-        } 
-        else if (type.startsWith('video/')) {
-          html += `
-            <div class="bg-black/5 p-2.5 rounded-xl border space-y-1">
-              <div class="flex justify-between items-center text-[11px] font-semibold text-gray-700">
-                <span class="truncate">🎬 ${name}</span>
-                <a href="${url}" download="${name}" target="_blank" class="text-indigo-600 hover:underline shrink-0">📥 다운로드</a>
-              </div>
-              <video controls class="w-full max-h-[450px] rounded-lg">
-                <source src="${url}" type="${type}">
-              </video>
-            </div>`;
-        } 
-        else if (type === 'application/pdf') {
-          html += `
-            <div class="flex justify-between items-center p-2.5 bg-red-50 rounded-xl border border-red-100 text-[11px]">
-              <div class="flex items-center gap-1.5 truncate pr-2">
-                <span>📄</span>
-                <span class="font-medium text-red-700 truncate">${name}</span>
-              </div>
-              <div class="flex gap-1.5 shrink-0">
-                <a href="${url}" target="_blank" rel="noopener noreferrer" class="bg-red-600 hover:bg-red-700 text-white font-semibold px-2.5 py-1 rounded transition">
-                  📄 PDF 보기
-                </a>
-                <a href="${url}" download="${name}" target="_blank" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-2 py-1 rounded transition">
-                  📥 다운로드
-                </a>
-              </div>
-            </div>`;
-        } 
-        else {
-          html += `
-            <div class="flex justify-between items-center p-2.5 bg-gray-50 rounded-xl border text-[11px]">
-              <div class="flex items-center gap-1.5 truncate pr-2">
-                <span>💾</span>
-                <span class="font-medium text-gray-700 truncate">${name}</span>
-              </div>
-              <a href="${url}" download="${name}" target="_blank" class="shrink-0 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-2.5 py-1 rounded transition">
-                📥 다운로드
-              </a>
-            </div>`;
-        }
-      });
-      html += '</div>';
-      return html;
-    }
-
-    async function compressImage(file) {
-      return new Promise((resolve) => {
-        if (!file.type.startsWith('image/') || file.type.includes('svg') || file.size <= 500 * 1024) {
-          resolve(file);
-          return;
-        }
-
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = (e) => {
-          const img = new Image();
-          img.src = e.target.result;
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            let width = img.width;
-            let height = img.height;
-            const maxDim = 1200;
-
-            if (width > maxDim || height > maxDim) {
-              if (width > height) {
-                height = Math.round((height * maxDim) / width);
-                width = maxDim;
-              } else {
-                width = Math.round((width * maxDim) / height);
-                height = maxDim;
-              }
-            }
-
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
-
-            canvas.toBlob((blob) => {
-              if (!blob) {
-                resolve(file);
-                return;
-              }
-              const compressedFile = new File([blob], file.name, {
-                type: 'image/jpeg',
-                lastModified: Date.now()
-              });
-              resolve(compressedFile);
-            }, 'image/jpeg', 0.80);
-          };
-          img.onerror = () => resolve(file);
-        };
-        reader.onerror = () => resolve(file);
-      });
-    }
-
-    async function uploadFilesToStorage(files, bucketName = 'files', prefix = 'file') {
-      const attachments = [];
-
-      for (let i = 0; i < files.length; i++) {
-        let file = files[i];
-
-        if (file.type.startsWith('image/')) {
-          file = await compressImage(file);
-        }
-
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2,7)}.${fileExt}`;
-
-        const { error: uploadError } = await supabaseClient.storage.from(bucketName).upload(fileName, file);
-        if (uploadError) {
-          throw new Error(`'${file.name}' 업로드 실패: ` + uploadError.message);
-        }
-
-        const { data: publicUrlData } = supabaseClient.storage.from(bucketName).getPublicUrl(fileName);
-        attachments.push({
-          name: file.name,
-          url: publicUrlData.publicUrl,
-          type: file.type
-        });
-      }
-
-      return attachments;
-    }
-
-    async function createPost() {
-      const category = document.getElementById('post-category').value;
-      const title = document.getElementById('post-title').value.trim();
-      const content = document.getElementById('post-content').value.trim();
-      const fileInput = document.getElementById('post-files');
-      const submitBtn = document.getElementById('submit-btn');
-
-      if(!title || !content) {
-        alert("제목과 내용을 입력해주세요.");
-        return;
-      }
-
-      submitBtn.disabled = true;
-      submitBtn.innerText = "업로드 중...";
-
-      const files = Array.from(fileInput.files);
-
-      try {
-        let attachments = [];
-        if (files.length > 0) {
-          attachments = await uploadFilesToStorage(files, 'files', 'post');
-        }
-
-        const imageUrlValue = attachments.length > 0 ? JSON.stringify(attachments) : null;
-
-        const { error: dbError } = await supabaseClient
-          .from('posts')
-          .insert([{ category, title, content, image_url: imageUrlValue }]);
-
-        if (dbError) {
-          alert("글 저장 실패: " + dbError.message);
-        } else {
-          document.getElementById('post-title').value = '';
-          document.getElementById('post-content').value = '';
-          fileInput.value = '';
-          loadPosts();
-        }
-      } catch (e) {
-        alert("게시물 등록 중 오류 발생: " + e.message);
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerText = "게시하기";
-      }
-    }
-
-    async function loadPosts() {
+    // 🔀 랜덤 검색 기능 함수
+    async function executeRandomSearch() {
       const container = document.getElementById('posts-container');
       if (!container) return;
-      container.innerHTML = `<div class="text-center py-12 text-gray-400">게시글을 불러오는 중...</div>`;
+      container.innerHTML = `<div class="text-center py-12 text-gray-400">숨겨진 게시글을 뽑는 중...</div>`;
 
       try {
-        let query = supabaseClient.from('posts').select('*').order('created_at', { ascending: false });
+        let query = supabaseClient
+          .from('posts')
+          .select('*')
+          .order('search_count', { ascending: true })
+          .order('created_at', { ascending: false })
+          .limit(50);
 
-        // '전체' 탭이 아닐 때만 개별 카테고리 필터링 적용
         if (currentCategory !== 'all') {
           query = query.eq('category', currentCategory);
-        }
-
-        if (currentSearchType !== 'date' && currentSearchKeyword) {
-          if (currentSearchType === 'all') {
-            query = query.or(`title.ilike.%${currentSearchKeyword}%,content.ilike.%${currentSearchKeyword}%`);
-          } else if (currentSearchType === 'title') {
-            query = query.ilike('title', `%${currentSearchKeyword}%`);
-          } else if (currentSearchType === 'content') {
-            query = query.ilike('content', `%${currentSearchKeyword}%`);
-          }
-        }
-
-        if (currentSearchType === 'date' && currentSearchDate) {
-          const startDate = new Date(currentSearchDate);
-          startDate.setHours(0, 0, 0, 0);
-          const endDate = new Date(currentSearchDate);
-          endDate.setHours(23, 59, 59, 999);
-
-          query = query.gte('created_at', startDate.toISOString())
-                       .lte('created_at', endDate.toISOString());
         }
 
         const { data: posts, error } = await query;
 
         if (error) {
-          container.innerHTML = `<div class="bg-white p-8 rounded-2xl border text-center text-red-500">⚠️ 불러오기 실패: ${escapeHtml(error.message)}</div>`;
+          container.innerHTML = `<div class="bg-white p-8 rounded-2xl border text-center text-red-500">⚠️ 랜덤 검색 실패: ${escapeHtml(error.message)}</div>`;
           return;
         }
-
-        // 구 카테고리명(여행, 일상, 맛집)까지 통합 라벨 구성
-        const categoryLabels = {
-          travel: '✈️ 여행', daily: '☕ 일상', food: '🍽️ 맛집', japanese: '🇯🇵 일본어 1'
-        };
-        currentSiteConfig.categories.forEach(c => { categoryLabels[c.id] = c.label; });
 
         if (!posts || posts.length === 0) {
           container.innerHTML = `<div class="bg-white p-12 rounded-2xl border text-center text-gray-400">등록된 게시글이 없습니다.</div>`;
           return;
         }
 
-        posts.forEach(p => { loadedPostsMap[p.id] = p; });
+        const randomIndex = Math.floor(Math.random() * posts.length);
+        const randomPost = posts[randomIndex];
 
-        const postHtmlPromises = posts.map(async (post) => {
-          const dateStr = new Date(post.created_at).toLocaleString('ko-KR', {
-            year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-          });
+        const newCount = (randomPost.search_count || 0) + 1;
+        await supabaseClient
+          .from('posts')
+          .update({ search_count: newCount })
+          .eq('id', randomPost.id);
 
-          let comments = [];
-          try {
-            const { data: commentData } = await supabaseClient
-              .from('comments')
-              .select('*')
-              .eq('post_id', post.id)
-              .order('created_at', { ascending: true });
-            if (commentData) comments = commentData;
-          } catch (e) {}
+        renderSinglePostResult(randomPost, "🎲 랜덤 추천 게시물입니다! (자주 안 보였던 숨은 글)");
 
-          const commentsListHtml = comments && comments.length > 0 
-            ? comments.map(c => {
-                let authorDisplay = c.user_email || '익명';
-                if (authorDisplay.includes('@')) authorDisplay = authorDisplay.split('@')[0];
-                const commentYtEmbed = getYouTubeEmbedsHtml(c.content);
-                const commentAttachments = getAttachmentsHtml(c.image_url);
-
-                return `
-                  <div class="bg-slate-50 p-3 rounded-xl text-xs space-y-2 border">
-                    <div class="flex justify-between font-semibold text-gray-700">
-                      <span>👤 ${escapeHtml(authorDisplay)}</span>
-                      <span class="text-gray-400 font-normal text-[11px]">${new Date(c.created_at).toLocaleString('ko-KR')}</span>
-                    </div>
-                    ${c.content ? `<p class="text-gray-600 whitespace-pre-wrap leading-relaxed">${escapeHtml(c.content)}</p>` : ''}
-                    ${commentYtEmbed}
-                    ${commentAttachments}
-                  </div>
-                `;
-              }).join('')
-            : '<p class="text-xs text-gray-400 text-center py-2">등록된 댓글이 없습니다.</p>';
-
-          const postYtEmbed = getYouTubeEmbedsHtml(post.content);
-          const postAttachments = getAttachmentsHtml(post.image_url);
-
-          return `
-            <article class="bg-white p-6 rounded-2xl shadow-sm border space-y-4" id="post-article-${post.id}">
-              <div class="flex justify-between items-start">
-                <span class="inline-block px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-semibold rounded-full">
-                  ${categoryLabels[post.category] || post.category}
-                </span>
-                <div class="flex items-center gap-2">
-                  <span class="text-xs text-gray-400">${dateStr}</span>
-                  ${currentUser ? `
-                    <button type="button" onclick="openEditForm(${post.id})" class="text-xs text-blue-500 hover:text-blue-700 font-semibold px-2 py-1 rounded border border-blue-200">✏️ 수정</button>
-                    <button type="button" onclick="deletePost(${post.id})" class="text-xs text-red-500 hover:text-red-700 font-semibold px-2 py-1 rounded border border-red-200">🗑️ 삭제</button>
-                  ` : ''}
-                </div>
-              </div>
-
-              <div id="post-view-${post.id}" class="space-y-4">
-                <h3 class="text-lg font-bold text-gray-800">${escapeHtml(post.title)}</h3>
-                <p class="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">${escapeHtml(post.content)}</p>
-                ${postYtEmbed}
-                ${postAttachments}
-              </div>
-
-              <!-- 댓글 영역 -->
-              <div class="pt-4 border-t space-y-3">
-                <h5 class="text-xs font-bold text-gray-700">💬 댓글</h5>
-                <div class="space-y-2">${commentsListHtml}</div>
-                ${currentUser ? `
-                  <div class="pt-3 border-t space-y-2">
-                    <textarea id="comment-input-${post.id}" rows="2" placeholder="댓글 내용 (유튜브 주소 입력 시 영상 자동 전환)" class="w-full px-3 py-2 border rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
-                    <div class="space-y-1">
-                      <label class="block text-[11px] font-semibold text-gray-500">📎 댓글 파일 첨부 (사진, 음악, 동영상, PDF 다중 선택 가능)</label>
-                      <div class="flex items-center justify-between gap-2">
-                        <input type="file" id="comment-files-${post.id}" multiple accept="image/*, audio/*, video/*, application/pdf, .zip, .docx, .xlsx, .pptx, .hwp, .hwpx" class="text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 flex-1">
-                        <button type="button" onclick="addComment(${post.id})" id="comment-submit-btn-${post.id}" class="bg-indigo-600 text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-indigo-700 transition shrink-0">댓글 등록</button>
-                      </div>
-                    </div>
-                  </div>
-                ` : `
-                  <p class="text-xs text-gray-400 text-center py-2 bg-gray-50 rounded-lg">댓글을 작성하려면 로그인이 필요합니다.</p>
-                `}
-              </div>
-            </article>
-          `;
-        });
-
-        const postsHtmlArray = await Promise.all(postHtmlPromises);
-        container.innerHTML = postsHtmlArray.join('');
       } catch (err) {
         container.innerHTML = `<div class="bg-white p-8 rounded-2xl border text-center text-red-500">⚠️ 오류: ${escapeHtml(err.message)}</div>`;
       }
     }
 
-    async function addComment(postId) {
-      if (!currentUser) {
-        alert("로그인이 필요합니다.");
-        return;
-      }
+    async function renderSinglePostResult(post, badgeMessage) {
+      const container = document.getElementById('posts-container');
+      loadedPostsMap[post.id] = post;
 
-      const inputEl = document.getElementById(`comment-input-${postId}`);
-      const fileInput = document.getElementById(`comment-files-${postId}`);
-      const submitBtn = document.getElementById(`comment-submit-btn-${postId}`);
-      const content = inputEl ? inputEl.value.trim() : '';
-
-      const files = fileInput && fileInput.files ? Array.from(fileInput.files) : [];
-
-      if (!content && files.length === 0) {
-        alert("댓글 내용이나 첨부파일 중 하나는 입력해주세요.");
-        return;
-      }
-
-      if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.innerText = "등록 중...";
-      }
-
-      try {
-        let attachments = [];
-        if (files.length > 0) {
-          attachments = await uploadFilesToStorage(files, 'files', 'comment');
-        }
-
-        const authorName = userDisplayName || currentUser.email.split('@')[0];
-        const imageUrlValue = attachments.length > 0 ? JSON.stringify(attachments) : null;
-
-        const payload = { 
-          post_id: postId, 
-          user_email: authorName, 
-          content: content 
-        };
-
-        if (imageUrlValue) {
-          payload.image_url = imageUrlValue;
-        }
-
-        const { data, error } = await supabaseClient
-          .from('comments')
-          .insert([payload])
-          .select();
-
-        if (error) {
-          alert("댓글 작성 실패: " + error.message);
-        } else if (!data || data.length === 0) {
-          alert("댓글 작성 실패: DB 권한(RLS) 문제이거나 컬럼이 없습니다.");
-        } else {
-          if (inputEl) inputEl.value = '';
-          if (fileInput) fileInput.value = '';
-          loadPosts();
-        }
-      } catch (e) {
-        alert("댓글 등록 중 오류 발생: " + e.message);
-      } finally {
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.innerText = "댓글 등록";
-        }
-      }
-    }
-
-    async function deletePost(postId) {
-      if (!currentUser || !confirm("정말로 이 게시글을 삭제하시겠습니까?")) return;
-
-      try {
-        const { error } = await supabaseClient.from('posts').delete().eq('id', postId);
-        if (error) alert("삭제 실패: " + error.message);
-        else loadPosts();
-      } catch (err) {
-        alert("삭제 중 오류 발생");
-      }
-    }
-
-    function escapeHtml(str) {
-      if(!str) return '';
-      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-    }
-
-    function openEditForm(postId) {
-      const post = loadedPostsMap[postId];
-      if (!post) {
-        alert("게시글 정보를 찾을 수 없습니다.");
-        return;
-      }
-
-      const viewEl = document.getElementById(`post-view-${postId}`);
-      if (!viewEl) return;
-
-      let catOptionsHtml = '';
-      currentSiteConfig.categories.forEach(cat => {
-        const selected = (cat.id === post.category) ? 'selected' : '';
-        catOptionsHtml += `<option value="${cat.id}" ${selected}>${cat.label}</option>`;
+      const dateStr = new Date(post.created_at).toLocaleString('ko-KR', {
+        year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
       });
 
-      viewEl.innerHTML = `
-        <div class="bg-indigo-50/70 p-4 rounded-xl border border-indigo-200 space-y-3">
-          <h4 class="text-sm font-bold text-indigo-700 flex items-center gap-1">✏️ 게시글 수정</h4>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
-            <div>
-              <label class="block text-xs font-semibold text-gray-600 mb-1">카테고리</label>
-              <select id="edit-category-${postId}" class="w-full px-3 py-1.5 border rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                ${catOptionsHtml}
-              </select>
-            </div>
-            <div class="md:col-span-2">
-              <label class="block text-xs font-semibold text-gray-600 mb-1">제목</label>
-              <input type="text" id="edit-title-${postId}" class="w-full px-3 py-1.5 border rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            </div>
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1">내용</label>
-            <textarea id="edit-content-${postId}" rows="4" class="w-full px-3 py-1.5 border rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1">추가 파일 첨부 (기존 파일에 유지 추가)</label>
-            <input type="file" id="edit-files-${postId}" multiple accept="image/*, audio/*, video/*, application/pdf, .zip, .docx, .xlsx, .pptx, .hwp, .hwpx" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-100 file:text-indigo-700">
-          </div>
-          <div class="flex justify-end gap-2 pt-2">
-            <button type="button" onclick="cancelEdit()" class="bg-gray-200 text-gray-700 font-semibold px-4 py-1.5 rounded-lg text-xs hover:bg-gray-300 transition">취소</button>
-            <button type="button" onclick="updatePost(${postId})" id="edit-submit-btn-${postId}" class="bg-indigo-600 text-white font-semibold px-4 py-1.5 rounded-lg text-xs hover:bg-indigo-700 transition">저장</button>
-          </div>
-        </div>
-      `;
+      const categoryLabels = {};
+      currentSiteConfig.categories.forEach(c => { categoryLabels[c.id] = c.label; });
 
-      document.getElementById(`edit-title-${postId}`).value = post.title || '';
-      document.getElementById(`edit-content-${postId}`).value = post.content || '';
-    }
-
-    function cancelEdit() {
-      loadPosts(); 
-    }
-
-    async function updatePost(postId) {
-      const post = loadedPostsMap[postId];
-      const category = document.getElementById(`edit-category-${postId}`).value;
-      const title = document.getElementById(`edit-title-${postId}`).value.trim();
-      const content = document.getElementById(`edit-content-${postId}`).value.trim();
-      const fileInput = document.getElementById(`edit-files-${postId}`);
-      const submitBtn = document.getElementById(`edit-submit-btn-${postId}`);
-
-      if (!title || !content) {
-        alert("제목과 내용을 모두 입력해주세요.");
-        return;
-      }
-
-      submitBtn.disabled = true;
-      submitBtn.innerText = "저장 중...";
-
+      let comments = [];
       try {
-        let existingAttachments = parseAttachments(post.image_url);
-        const files = fileInput && fileInput.files ? Array.from(fileInput.files) : [];
+        const { data: commentData } = await supabaseClient
+          .from('comments')
+          .select('*')
+          .eq('post_id', post.id)
+          .order('created_at', { ascending: true });
+        if (commentData) comments = commentData;
+      } catch (e) {}
 
-        if (files.length > 0) {
-          const newAttachments = await uploadFilesToStorage(files, 'files', 'post');
-          existingAttachments = [...existingAttachments, ...newAttachments];
-        }
+      const commentsListHtml = comments && comments.length > 0 
+        ? comments.map(c => {
+            let authorDisplay = c.user_email || '익명';
+            if (authorDisplay.includes('@')) authorDisplay = authorDisplay.split('@')[0];
+            const commentYtEmbed = getYouTubeEmbedsHtml(c.content);
+            const commentAttachments = getAttachmentsHtml(c.image_url, false, null);
 
-        const imageUrlValue = existingAttachments.length > 0 ? JSON.stringify(existingAttachments) : null;
-
-        const { data, error } = await supabaseClient
-          .from('posts')
-          .update({ category: category, title: title, content: content, image_url: imageUrlValue })
-          .eq('id', postId)
-          .select();
-
-        if (error) {
-          alert("수정 실패: " + error.message);
-          submitBtn.disabled = false;
-          submitBtn.innerText = "저장";
-        } else if (!data || data.length === 0) {
-          alert("수정 실패: DB 권한(RLS) 문제이거나 해당 게시글이 없습니다.");
-          submitBtn.disabled = false;
-          submitBtn.innerText = "저장";
-        } else {
-          alert("성공적으로 수정되었습니다!");
-          loadPosts(); 
-        }
-      } catch (e) {
-        alert("수정 중 오류 발생: " + e.message);
-        submitBtn.disabled = false;
-        submitBtn.innerText = "저장";
-      }
-    }
-  </script>
-</body>
-</html>
+            return `
+              <div class="bg-slate-50 p-3 rounded-xl text-xs space-y-2 border">
+                <div class="flex justify-between font-semibold text-gray-700">
+                  <span>👤 ${escapeHtml(authorDisplay)}</span>
+                  <span class="text-gray-400 font-normal text-[11px]">${new Date(c.created
