@@ -48,7 +48,7 @@
       <p id="auth-msg" class="text-xs text-center text-red-500 min-h-[16px]"></p>
     </section>
 
-    <!-- 2. 동적 카테고리 탭 (모바일 스크롤 지원) -->
+    <!-- 2. 동적 카테고리 탭 -->
     <section id="category-tabs-container" class="flex gap-2 overflow-x-auto pb-2 border-b no-scrollbar">
     </section>
 
@@ -88,7 +88,7 @@
       </div>
     </section>
 
-    <!-- 4. 검색 기능 및 자동완성 (모바일 반응형 레이아웃 개선) -->
+    <!-- 4. 검색 기능 및 자동완성 -->
     <section class="bg-white p-3 sm:p-4 rounded-xl shadow-sm border space-y-2 relative">
       <div class="grid grid-cols-2 sm:flex gap-2">
         <select id="search-category" class="w-full sm:w-auto px-3 py-2 border rounded-lg text-xs sm:text-sm bg-white font-medium">
@@ -104,7 +104,6 @@
 
       <div class="relative flex-1">
         <input type="text" id="search-keyword" placeholder="검색어를 입력하세요" class="w-full px-3 py-2 border rounded-lg text-xs sm:text-sm" oninput="handleKeywordInput()" onfocus="handleKeywordInput()" onkeypress="if(event.key === 'Enter') executeSearch()">
-        <!-- 검색어 자동완성 드롭다운 -->
         <div id="search-autocomplete-box" class="absolute left-0 right-0 top-full mt-1 bg-white border rounded-xl shadow-lg z-50 hidden max-h-48 overflow-y-auto"></div>
       </div>
 
@@ -504,7 +503,7 @@
             let authorDisplay = c.user_email || '익명';
             if (authorDisplay.includes('@')) authorDisplay = authorDisplay.split('@')[0];
             const commentYtEmbed = getYouTubeEmbedsHtml(c.content);
-            const commentAttachments = getAttachmentsHtml(c.image_url, false, null);
+            const commentAttachments = getAttachmentsHtml(c.image_url, true, post.id, c.id);
 
             return `
               <div class="bg-slate-50 p-3 rounded-xl text-xs space-y-2 border">
@@ -521,7 +520,7 @@
         : '<p class="text-xs text-gray-400 text-center py-2">등록된 댓글이 없습니다.</p>';
 
       const postYtEmbed = getYouTubeEmbedsHtml(post.content);
-      const postAttachments = getAttachmentsHtml(post.image_url, true, post.id);
+      const postAttachments = getAttachmentsHtml(post.image_url, true, post.id, null);
 
       container.innerHTML = `
         <div class="mb-3 p-3 bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold rounded-xl flex justify-between items-center">
@@ -633,7 +632,8 @@
       return [];
     }
 
-    function getAttachmentsHtml(rawData, isEditable = false, postId = null) {
+    // 게시글 & 댓글 파일 지원 (commentId 유무로 게시글/댓글 파일 구분 삭제)
+    function getAttachmentsHtml(rawData, isEditable = false, postId = null, commentId = null) {
       const attachments = parseAttachments(rawData);
       if (attachments.length === 0) return '';
 
@@ -643,9 +643,14 @@
         const name = escapeHtml(att.name || '첨부파일');
         const url = att.url;
 
-        let deleteBtnHtml = (isEditable && currentUser) ? `
-          <button type="button" onclick="removeSpecificAttachment(${postId}, ${idx})" class="text-xs bg-red-100 hover:bg-red-200 text-red-600 font-semibold px-2 py-1 rounded transition">❌ 삭제</button>
-        ` : '';
+        let deleteBtnHtml = '';
+        if (isEditable && currentUser) {
+          if (commentId) {
+            deleteBtnHtml = `<button type="button" onclick="removeCommentAttachment(${commentId}, ${idx})" class="text-xs bg-red-100 hover:bg-red-200 text-red-600 font-semibold px-2 py-1 rounded transition">❌ 삭제</button>`;
+          } else if (postId) {
+            deleteBtnHtml = `<button type="button" onclick="removeSpecificAttachment(${postId}, ${idx})" class="text-xs bg-red-100 hover:bg-red-200 text-red-600 font-semibold px-2 py-1 rounded transition">❌ 삭제</button>`;
+          }
+        }
 
         if (type.startsWith('image/')) {
           html += `
@@ -710,6 +715,7 @@
       return html;
     }
 
+    // 🗑️ 게시글 첨부파일 개별 삭제
     async function removeSpecificAttachment(postId, fileIndex) {
       if (!confirm("이 첨부파일을 정말 삭제하시겠습니까?")) return;
       const post = loadedPostsMap[postId];
@@ -730,6 +736,43 @@
           alert("파일 삭제 실패: " + error.message);
         } else {
           alert("첨부파일이 삭제되었습니다.");
+          loadPosts();
+        }
+      } catch (e) {
+        alert("오류 발생: " + e.message);
+      }
+    }
+
+    // 🗑️ 댓글 첨부파일 개별 삭제 기능
+    async function removeCommentAttachment(commentId, fileIndex) {
+      if (!confirm("이 댓글의 첨부파일을 정말 삭제하시겠습니까?")) return;
+
+      try {
+        const { data: comment, error: fetchErr } = await supabaseClient
+          .from('comments')
+          .select('image_url')
+          .eq('id', commentId)
+          .single();
+
+        if (fetchErr || !comment) {
+          alert("댓글 정보를 불러올 수 없습니다.");
+          return;
+        }
+
+        let attachments = parseAttachments(comment.image_url);
+        attachments.splice(fileIndex, 1);
+
+        const newImageUrlValue = attachments.length > 0 ? JSON.stringify(attachments) : null;
+
+        const { error: updateErr } = await supabaseClient
+          .from('comments')
+          .update({ image_url: newImageUrlValue })
+          .eq('id', commentId);
+
+        if (updateErr) {
+          alert("댓글 파일 삭제 실패: " + updateErr.message);
+        } else {
+          alert("댓글 첨부파일이 삭제되었습니다.");
           loadPosts();
         }
       } catch (e) {
@@ -932,7 +975,7 @@
                 let authorDisplay = c.user_email || '익명';
                 if (authorDisplay.includes('@')) authorDisplay = authorDisplay.split('@')[0];
                 const commentYtEmbed = getYouTubeEmbedsHtml(c.content);
-                const commentAttachments = getAttachmentsHtml(c.image_url, false, null);
+                const commentAttachments = getAttachmentsHtml(c.image_url, true, post.id, c.id);
 
                 return `
                   <div class="bg-slate-50 p-3 rounded-xl text-xs space-y-2 border">
@@ -949,7 +992,7 @@
             : '<p class="text-xs text-gray-400 text-center py-2">등록된 댓글이 없습니다.</p>';
 
           const postYtEmbed = getYouTubeEmbedsHtml(post.content);
-          const postAttachments = getAttachmentsHtml(post.image_url, true, post.id);
+          const postAttachments = getAttachmentsHtml(post.image_url, true, post.id, null);
 
           return `
             <article class="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border space-y-4" id="post-article-${post.id}">
