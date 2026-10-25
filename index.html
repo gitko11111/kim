@@ -134,6 +134,16 @@
 
   <script>
     const SITE_CONFIGS = {
+      oliver: {
+        siteId: 'oliver',
+        title: "📚 독서회 커뮤니티",
+        categories: [
+          { id: 'notice', label: '📢 공지사항' },
+          { id: 'book_review', label: '📖 책 감상/토론' },
+          { id: 'korean_lit', label: '🇰🇷 한국 문학' },
+          { id: 'free', label: '💬 자유 게시판' }
+        ]
+      },
       withkeke: {
         siteId: 'withkeke',
         title: "🐶 케케와 함께",
@@ -160,10 +170,15 @@
     };
 
     let CURRENT_SITE_KEY = 'language';
-    // 대소문자 상관없이 주소에 'withkeke'가 포함되면 자동으로 케케와 함께 사이트로 지정
-    if (window.location.hostname.toLowerCase().includes('withkeke')) {
+    const host = window.location.hostname.toLowerCase();
+
+    // 🌐 도메인 주소 판별 (oliver/book -> 독서회, withkeke -> 케케, 기타 -> 언어 공부)
+    if (host.includes('oliver') || host.includes('book')) {
+      CURRENT_SITE_KEY = 'oliver';
+    } else if (host.includes('withkeke')) {
       CURRENT_SITE_KEY = 'withkeke';
     }
+
     const currentSiteConfig = SITE_CONFIGS[CURRENT_SITE_KEY];
 
     let rawUrl = "https://rxuodtvhhqfcyuypygba.supabase.co";
@@ -1141,7 +1156,7 @@
 
     function escapeHtml(str) {
       if(!str) return '';
-      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&#039;");
     }
 
     function openEditForm(postId) {
@@ -1178,7 +1193,7 @@
           </div>
           <div>
             <label class="block text-xs font-semibold text-gray-600 mb-1">추가 파일 첨부</label>
-            <input type="file" id="edit-files-${postId}" multiple accept="image/*, audio/*, video/*, application/pdf" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-100 file:text-indigo-700">
+            <input type="file" id="edit-files-${postId}" multiple accept="image/*, audio/*, video/*, application/pdf" class="text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-100 file:text-indigo-700">
           </div>
           <div class="flex justify-end gap-2 pt-2">
             <button type="button" onclick="cancelEdit()" class="bg-gray-200 text-gray-700 font-semibold px-4 py-1.5 rounded-lg text-xs hover:bg-gray-300 transition">취소</button>
