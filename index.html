@@ -352,27 +352,50 @@
       }
     }
 
+    // 🔍 날짜 형식(10.22 등)과 자주 쓰는 핵심 검색어 우선 자동완성 수집
     async function loadPostsForAutocomplete() {
       try {
         const { data: posts } = await supabaseClient.from('posts').select('title');
         if (!posts) return;
 
+        const stopWords = new Set([
+          'sh', 'shu', 'ch', 'th', 'ph', 'wh', 'uh', 'ah', 'oh', 'the', 'and', 'for', 'with', 'this', 'that'
+        ]);
+
         const wordCounts = {};
+
         posts.forEach(p => {
           if (!p.title) return;
-          const words = p.title.replace(/[^\w\s가-힣]/g, '').split(/\s+/);
-          words.forEach(w => {
-            const cleanW = w.trim();
-            if (cleanW.length >= 2) {
+          const rawWords = p.title.split(/\s+/);
+
+          rawWords.forEach(w => {
+            let cleanW = w.trim();
+            const lowerW = cleanW.toLowerCase();
+
+            if (!cleanW || stopWords.has(lowerW)) return;
+
+            if (/[가-힣]/.test(cleanW)) {
+              cleanW = cleanW.replace(/(에서는|에서|으로|까지|부터|에게|한테|은|는|이|가|의|에|을|를|과|와|도|만|로)$/g, '');
+            }
+
+            if (cleanW.length >= 2 || /\d+\.\d+/.test(cleanW)) {
               wordCounts[cleanW] = (wordCounts[cleanW] || 0) + 1;
             }
           });
         });
 
+        // 사용자가 검색했던 로컬 히스토리 결합
+        const localHistory = JSON.parse(localStorage.getItem('my_search_history') || '[]');
+        localHistory.forEach(kw => {
+          if (kw) wordCounts[kw] = (wordCounts[kw] || 0) + 5;
+        });
+
         allSearchKeywordsHistory = Object.keys(wordCounts)
-          .filter(w => wordCounts[w] >= 2)
           .sort((a, b) => wordCounts[b] - wordCounts[a]);
-      } catch (e) {}
+
+      } catch (e) {
+        console.error("자동완성 로드 에러:", e);
+      }
     }
 
     function handleKeywordInput() {
@@ -415,6 +438,15 @@
       } else {
         currentSearchKeyword = document.getElementById('search-keyword').value.trim();
         currentSearchDate = '';
+
+        if (currentSearchKeyword && currentSearchKeyword.length >= 2) {
+          let localHistory = JSON.parse(localStorage.getItem('my_search_history') || '[]');
+          if (!localHistory.includes(currentSearchKeyword)) {
+            localHistory.unshift(currentSearchKeyword);
+            if (localHistory.length > 20) localHistory.pop();
+            localStorage.setItem('my_search_history', JSON.stringify(localHistory));
+          }
+        }
       }
 
       const box = document.getElementById('search-autocomplete-box');
@@ -429,6 +461,7 @@
         activeBtn.className = "cat-tab px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-semibold bg-indigo-600 text-white shadow-sm shrink-0";
       }
 
+      loadPostsForAutocomplete();
       loadPosts();
     }
 
@@ -632,7 +665,6 @@
       return [];
     }
 
-    // 게시글 & 댓글 파일 지원 (commentId 유무로 게시글/댓글 파일 구분 삭제)
     function getAttachmentsHtml(rawData, isEditable = false, postId = null, commentId = null) {
       const attachments = parseAttachments(rawData);
       if (attachments.length === 0) return '';
@@ -715,7 +747,6 @@
       return html;
     }
 
-    // 🗑️ 게시글 첨부파일 개별 삭제
     async function removeSpecificAttachment(postId, fileIndex) {
       if (!confirm("이 첨부파일을 정말 삭제하시겠습니까?")) return;
       const post = loadedPostsMap[postId];
@@ -743,7 +774,6 @@
       }
     }
 
-    // 🗑️ 댓글 첨부파일 개별 삭제 기능
     async function removeCommentAttachment(commentId, fileIndex) {
       if (!confirm("이 댓글의 첨부파일을 정말 삭제하시겠습니까?")) return;
 
