@@ -169,16 +169,15 @@
       }
     };
 
-    let CURRENT_SITE_KEY = 'language';
-    // 🌐 접속한 도메인 주소(hostname) 전체를 소문자로 판별
+    // 💡 기본값을 'withkeke'로 설정하여 케케 게시판이 기본으로 뜨게 수정
+    let CURRENT_SITE_KEY = 'withkeke';
     const host = window.location.hostname.toLowerCase();
 
-    // 주소 어디든 oliver나 book이 감지되면 무조건 독서회 모드로 지정
     if (host.indexOf('oliver') !== -1 || host.indexOf('book') !== -1) {
       CURRENT_SITE_KEY = 'oliver';
-    } 
-    // 주소 어디든 withkeke가 감지되면 무조건 케케와 함께 모드로 지정
-    else if (host.indexOf('withkeke') !== -1) {
+    } else if (host.indexOf('language') !== -1) {
+      CURRENT_SITE_KEY = 'language';
+    } else {
       CURRENT_SITE_KEY = 'withkeke';
     }
 
