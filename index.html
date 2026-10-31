@@ -129,7 +129,6 @@
   </footer>
 
   <script>
-    // 🔥 DB에 있는 카테고리들(reading_pages, travel 등)을 탭에 모두 반영
     const SITE_CONFIGS = {
       withkeke: {
         siteId: 'withkeke',
@@ -486,6 +485,7 @@
       }
     }
 
+    // 🔥 카테고리 매칭 오류를 완벽히 해결한 유연한 로드 함수
     async function loadPosts() {
       const container = document.getElementById('posts-container');
       if (!container) return;
@@ -498,7 +498,20 @@
           .order('created_at', { ascending: false });
 
         if (currentCategory !== 'all') {
-          query = query.eq('category', currentCategory);
+          // 선택한 카테고리에 대응하는 DB 값들을 유연하게 모두 허용합니다.
+          if (currentCategory === 'travel') {
+            query = query.in('category', ['travel', '여행']);
+          } else if (currentCategory === 'daily') {
+            query = query.in('category', ['daily', '일상', '일상생활']);
+          } else if (currentCategory === 'food') {
+            query = query.in('category', ['food', '맛집', '음식']);
+          } else if (currentCategory === 'philosophy') {
+            query = query.in('category', ['philosophy', '철학']);
+          } else if (currentCategory === 'reading_pages') {
+            query = query.in('category', ['reading_pages', '독서노트']);
+          } else {
+            query = query.eq('category', currentCategory);
+          }
         }
 
         const { data: posts, error } = await query;
