@@ -170,7 +170,7 @@
     let currentSearchDate = '';
     const loadedPostsMap = {};
 
-    window.addEventListener('DOMContentLoaded', async () => {
+    window.addEventListener('DOMContentLoaded', async function() {
       try {
         await checkAuth();
       } catch (e) {}
@@ -180,8 +180,8 @@
     async function checkAuth() {
       if (!supabaseClient) return;
       try {
-        const { data } = await supabaseClient.auth.getUser();
-        currentUser = data?.user || null;
+        const res = await supabaseClient.auth.getUser();
+        currentUser = res.data?.user || null;
         if (currentUser) {
           userDisplayName = currentUser.user_metadata?.nickname || currentUser.email.split('@')[0];
         }
@@ -195,16 +195,31 @@
       const writeSectionEl = document.getElementById('write-section');
 
       if (currentUser) {
-        authStatusEl.innerHTML = `
-          <span class="text-xs text-gray-600 font-medium">👤 ${escapeHtml(userDisplayName)} 님</span>
-          <button type="button" onclick="handleSignOut()" class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-2.5 py-1 rounded-lg transition">로그아웃</button>
-        `;
+        authStatusEl.innerHTML = '';
+        const span = document.createElement('span');
+        span.className = "text-xs text-gray-600 font-medium";
+        span.textContent = "👤 " + userDisplayName + " 님";
+        
+        const btn = document.createElement('button');
+        btn.type = "button";
+        btn.onclick = handleSignOut;
+        btn.className = "text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-2.5 py-1 rounded-lg transition";
+        btn.textContent = "로그아웃";
+
+        authStatusEl.appendChild(span);
+        authStatusEl.appendChild(btn);
+
         authSectionEl.classList.add('hidden');
         writeSectionEl.classList.remove('hidden');
       } else {
-        authStatusEl.innerHTML = `
-          <button type="button" onclick="toggleAuthForm()" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold transition">로그인 / 회원가입</button>
-        `;
+        authStatusEl.innerHTML = '';
+        const btn = document.createElement('button');
+        btn.type = "button";
+        btn.onclick = toggleAuthForm;
+        btn.className = "text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold transition";
+        btn.textContent = "로그인 / 회원가입";
+
+        authStatusEl.appendChild(btn);
         writeSectionEl.classList.add('hidden');
       }
     }
@@ -220,19 +235,19 @@
       const msgEl = document.getElementById('auth-msg');
 
       if(!email || !password || !nickname) {
-        msgEl.innerText = "이메일, 비밀번호, 닉네임을 모두 입력해주세요.";
+        msgEl.textContent = "이메일, 비밀번호, 닉네임을 모두 입력해주세요.";
         return;
       }
 
-      msgEl.innerText = "회원가입 처리 중...";
+      msgEl.textContent = "회원가입 처리 중...";
       const { error } = await supabaseClient.auth.signUp({
-        email, password, options: { data: { nickname: nickname } }
+        email: email, password: password, options: { data: { nickname: nickname } }
       });
 
       if (error) {
-        msgEl.innerText = "회원가입 실패: " + error.message;
+        msgEl.textContent = "회원가입 실패: " + error.message;
       } else {
-        msgEl.innerText = "가입 완료! 로그인되었습니다.";
+        msgEl.textContent = "가입 완료! 로그인되었습니다.";
         await checkAuth();
         loadPosts();
       }
@@ -244,16 +259,16 @@
       const msgEl = document.getElementById('auth-msg');
 
       if(!email || !password) {
-        msgEl.innerText = "이메일과 비밀번호를 입력해주세요.";
+        msgEl.textContent = "이메일과 비밀번호를 입력해주세요.";
         return;
       }
 
-      msgEl.innerText = "로그인 중...";
-      const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      msgEl.textContent = "로그인 중...";
+      const { error } = await supabaseClient.auth.signInWithPassword({ email: email, password: password });
       if (error) {
-        msgEl.innerText = "로그인 실패: " + error.message;
+        msgEl.textContent = "로그인 실패: " + error.message;
       } else {
-        msgEl.innerText = "";
+        msgEl.textContent = "";
         await checkAuth();
         loadPosts();
       }
@@ -267,10 +282,11 @@
 
     function setCategory(cat) {
       currentCategory = cat;
-      document.querySelectorAll('.cat-tab').forEach(btn => {
+      const tabs = document.querySelectorAll('.cat-tab');
+      tabs.forEach(function(btn) {
         btn.className = "cat-tab px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-semibold bg-white text-gray-600 hover:bg-gray-50 border shrink-0";
       });
-      const activeBtn = document.getElementById(`tab-${cat}`);
+      const activeBtn = document.getElementById('tab-' + cat);
       if(activeBtn) {
         activeBtn.className = "cat-tab px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-semibold bg-indigo-600 text-white shadow-sm shrink-0";
       }
@@ -330,26 +346,32 @@
       setCategory('all');
     }
 
-    function getYouTubeEmbedsHtml(content) {
-      if (!content) return '';
+    function appendYouTubeEmbeds(content, container) {
+      if (!content) return;
       const ytRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/g;
-      const videoIds = new Set();
+      const videoIds = [];
       let match;
       while ((match = ytRegex.exec(content)) !== null) {
-        videoIds.add(match[1]);
+        if (!videoIds.includes(match[1])) {
+          videoIds.push(match[1]);
+        }
       }
-      if (videoIds.size === 0) return '';
+      if (videoIds.length === 0) return;
 
-      let html = '<div class="space-y-3 pt-2">';
+      const wrap = document.createElement('div');
+      wrap.className = "space-y-3 pt-2";
       videoIds.forEach(function(id) {
-        html += `
-          <div class="relative w-full aspect-video rounded-xl overflow-hidden shadow-sm border bg-black">
-            <iframe class="absolute top-0 left-0 w-full h-full" src="https://www.youtube.com/embed/${id}" frameborder="0" allowfullscreen></iframe>
-          </div>
-        `;
+        const div = document.createElement('div');
+        div.className = "relative w-full aspect-video rounded-xl overflow-hidden shadow-sm border bg-black";
+        const iframe = document.createElement('iframe');
+        iframe.className = "absolute top-0 left-0 w-full h-full";
+        iframe.src = "https://www.youtube.com/embed/" + id;
+        iframe.frameBorder = "0";
+        iframe.allowFullscreen = true;
+        div.appendChild(iframe);
+        wrap.appendChild(div);
       });
-      html += '</div>';
-      return html;
+      container.appendChild(wrap);
     }
 
     function parseAttachments(raw) {
@@ -372,33 +394,49 @@
       return [];
     }
 
-    function getAttachmentsHtml(rawData) {
+    function appendAttachments(rawData, container) {
       const attachments = parseAttachments(rawData);
-      if (attachments.length === 0) return '';
+      if (attachments.length === 0) return;
 
-      let html = '<div class="pt-2 space-y-3">';
+      const wrap = document.createElement('div');
+      wrap.className = "pt-2 space-y-3";
       attachments.forEach(function(att) {
         const type = att.type || '';
-        const name = escapeHtml(att.name || '첨부파일');
+        const name = att.name || '첨부파일';
         const url = att.url;
 
         if (type.startsWith('image/')) {
-          html += `
-            <div class="space-y-1.5">
-              <a href="${url}" target="_blank" class="block rounded-xl border bg-slate-900/5 flex justify-center items-center">
-                <img src="${url}" alt="${name}" class="max-h-[500px] w-auto object-contain">
-              </a>
-            </div>`;
+          const sub = document.createElement('div');
+          sub.className = "space-y-1.5";
+          const a = document.createElement('a');
+          a.href = url;
+          a.target = "_blank";
+          a.className = "block rounded-xl border bg-slate-900/5 flex justify-center items-center";
+          const img = document.createElement('img');
+          img.src = url;
+          img.alt = name;
+          img.className = "max-h-[500px] w-auto object-contain";
+          a.appendChild(img);
+          sub.appendChild(a);
+          wrap.appendChild(sub);
         } else {
-          html += `
-            <div class="flex justify-between items-center p-2.5 bg-gray-50 rounded-xl border text-[11px]">
-              <span class="font-medium text-gray-700 truncate">${name}</span>
-              <a href="${url}" download="${name}" target="_blank" class="bg-indigo-50 text-indigo-700 font-semibold px-2.5 py-1 rounded">📥 저장</a>
-            </div>`;
+          const sub = document.createElement('div');
+          sub.className = "flex justify-between items-center p-2.5 bg-gray-50 rounded-xl border text-[11px]";
+          const span = document.createElement('span');
+          span.className = "font-medium text-gray-700 truncate";
+          span.textContent = name;
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = name;
+          a.target = "_blank";
+          a.className = "bg-indigo-50 text-indigo-700 font-semibold px-2.5 py-1 rounded";
+          a.textContent = "📥 저장";
+          sub.appendChild(span);
+          sub.appendChild(a);
+          wrap.appendChild(sub);
         }
       });
-      html += '</div>';
-      return html;
+      container.appendChild(wrap);
     }
 
     async function uploadFilesToStorage(files) {
@@ -441,9 +479,9 @@
           .from('posts')
           .insert([{ 
             site_id: 'withkeke', 
-            category, 
-            title, 
-            content, 
+            category: category, 
+            title: title, 
+            content: content, 
             image_url: imageUrlValue 
           }]);
 
@@ -488,7 +526,7 @@
         const { data: posts, error } = await query;
 
         if (error) {
-          container.innerHTML = `<div class="bg-white p-8 rounded-2xl border text-center text-red-500">⚠️ 불러오기 실패: ${escapeHtml(error.message)}</div>`;
+          container.innerHTML = `<div class="bg-white p-8 rounded-2xl border text-center text-red-500">⚠️ 불러오기 실패</div>`;
           return;
         }
 
@@ -497,43 +535,51 @@
           return;
         }
 
-        posts.forEach(function(p) { loadedPostsMap[p.id] = p; });
+        container.innerHTML = '';
+        posts.forEach(function(post) {
+          const article = document.createElement('article');
+          article.className = "bg-white p-4 sm:p-6 rounded-2xl shadow-sm border space-y-4";
 
-        const postsHtmlArray = posts.map(function(post) {
-          const dateStr = new Date(post.created_at).toLocaleString('ko-KR', {
+          const headerDiv = document.createElement('div');
+          headerDiv.className = "flex justify-between items-start";
+
+          const badge = document.createElement('span');
+          badge.className = "inline-block px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-semibold rounded-full";
+          badge.textContent = categoryLabels[post.category] || post.category;
+
+          const dateSpan = document.createElement('span');
+          dateSpan.className = "text-xs text-gray-400";
+          dateSpan.textContent = new Date(post.created_at).toLocaleString('ko-KR', {
             year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
           });
 
-          const postYtEmbed = getYouTubeEmbedsHtml(post.content);
-          const postAttachments = getAttachmentsHtml(post.image_url);
+          headerDiv.appendChild(badge);
+          headerDiv.appendChild(dateSpan);
+          article.appendChild(headerDiv);
 
-          return `
-            <article class="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border space-y-4">
-              <div class="flex justify-between items-start">
-                <span class="inline-block px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-semibold rounded-full">
-                  ${categoryLabels[post.category] || post.category}
-                </span>
-                <span class="text-xs text-gray-400">${dateStr}</span>
-              </div>
-              <div class="space-y-4">
-                <h3 class="text-base sm:text-lg font-bold text-gray-800">${escapeHtml(post.title)}</h3>
-                <p class="text-xs sm:text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">${escapeHtml(post.content)}</p>
-                ${postYtEmbed}
-                ${postAttachments}
-              </div>
-            </article>
-          `;
+          const contentDiv = document.createElement('div');
+          contentDiv.className = "space-y-4";
+
+          const h3 = document.createElement('h3');
+          h3.className = "text-base sm:text-lg font-bold text-gray-800";
+          h3.textContent = post.title;
+
+          const p = document.createElement('p');
+          p.className = "text-xs sm:text-sm text-gray-600 whitespace-pre-wrap leading-relaxed";
+          p.textContent = post.content;
+
+          contentDiv.appendChild(h3);
+          contentDiv.appendChild(p);
+
+          appendYouTubeEmbeds(post.content, contentDiv);
+          appendAttachments(post.image_url, contentDiv);
+
+          article.appendChild(contentDiv);
+          container.appendChild(article);
         });
-
-        container.innerHTML = postsHtmlArray.join('');
       } catch (err) {
-        container.innerHTML = `<div class="bg-white p-8 rounded-2xl border text-center text-red-500">⚠️ 오류: ${escapeHtml(err.message)}</div>`;
+        container.innerHTML = `<div class="bg-white p-8 rounded-2xl border text-center text-red-500">⚠️ 오류 발생</div>`;
       }
-    }
-
-    function escapeHtml(str) {
-      if(!str) return '';
-      return str.replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">").replace(/"/g, """).replace(/'/g, "'");
     }
   </script>
 </body>
