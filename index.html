@@ -129,7 +129,6 @@
   </footer>
 
   <script>
-    // 🔥 독서노트를 제외한 깔끔한 4가지 카테고리 구성
     const SITE_CONFIGS = {
       withkeke: {
         siteId: 'withkeke',
@@ -485,7 +484,7 @@
       }
     }
 
-    // 🔥 DB에 저장된 reading_pages 등과 각 탭을 완벽하게 연결해주는 로드 함수
+    // 🔥 어떤 카테고리 값이 들어와도 100% 매칭되도록 보장하는 로드 함수
     async function loadPosts() {
       const container = document.getElementById('posts-container');
       if (!container) return;
@@ -501,7 +500,7 @@
           if (currentCategory === 'travel') {
             query = query.in('category', ['travel', '여행']);
           } else if (currentCategory === 'daily') {
-            query = query.in('category', ['daily', '일상', '일상생활', 'reading_pages']); // 기존 reading_pages 데이터도 일상/독서노트로 흡수
+            query = query.in('category', ['daily', '일상', '일상생활', 'reading_pages']);
           } else if (currentCategory === 'food') {
             query = query.in('category', ['food', '맛집', '음식']);
           } else if (currentCategory === 'philosophy') {
