@@ -103,8 +103,7 @@
       </div>
 
       <div class="relative flex-1">
-        <input type="text" id="search-keyword" placeholder="검색어를 입력하세요" class="w-full px-3 py-2 border rounded-lg text-xs sm:text-sm" oninput="handleKeywordInput()" onfocus="handleKeywordInput()" onkeypress="if(event.key === 'Enter') executeSearch()">
-        <div id="search-autocomplete-box" class="absolute left-0 right-0 top-full mt-1 bg-white border rounded-xl shadow-lg z-50 hidden max-h-48 overflow-y-auto"></div>
+        <input type="text" id="search-keyword" placeholder="검색어를 입력하세요" class="w-full px-3 py-2 border rounded-lg text-xs sm:text-sm" onkeypress="if(event.key === 'Enter') executeSearch()">
       </div>
 
       <input type="date" id="search-date" class="hidden w-full px-3 py-2 border rounded-lg text-xs sm:text-sm" onkeypress="if(event.key === 'Enter') executeSearch()">
@@ -164,8 +163,6 @@
     let currentSearchType = 'all';
     let currentSearchKeyword = '';
     let currentSearchDate = '';
-
-    let allSearchKeywordsHistory = []; 
     const loadedPostsMap = {};
 
     window.addEventListener('DOMContentLoaded', async () => {
@@ -173,7 +170,6 @@
       try {
         await checkAuth();
       } catch (e) {}
-      await loadPostsForAutocomplete();
       loadPosts();
     });
 
@@ -323,19 +319,6 @@
       }
     }
 
-    async function loadPostsForAutocomplete() {
-      try {
-        const { data: posts } = await supabaseClient
-          .from('posts')
-          .select('title');
-
-        if (!posts) return;
-        allSearchKeywordsHistory = posts.map(p => p.title).filter(Boolean);
-      } catch (e) {}
-    }
-
-    function handleKeywordInput() {}
-
     function executeSearch() {
       currentSearchCategory = document.getElementById('search-category').value;
       currentSearchType = document.getElementById('search-type').value;
@@ -352,7 +335,7 @@
       loadPosts();
     }
 
-    async function executeRandomSearch() {
+    function executeRandomSearch() {
       loadPosts();
     }
 
@@ -442,10 +425,6 @@
       return html;
     }
 
-    async function compressImage(file) {
-      return file;
-    }
-
     async function uploadFilesToStorage(files) {
       const attachments = [];
       for (let i = 0; i < files.length; i++) {
@@ -505,7 +484,7 @@
       }
     }
 
-    // 🔥 디버깅 로그와 site_id 조건이 포함된 핵심 로드 함수
+    // 🔥 카테고리 형태(영어/한글)를 유연하게 매칭하는 핵심 로드 함수
     async function loadPosts() {
       const container = document.getElementById('posts-container');
       if (!container) return;
@@ -518,12 +497,21 @@
           .order('created_at', { ascending: false });
 
         if (currentCategory !== 'all') {
-          query = query.eq('category', currentCategory);
+          if (currentCategory === 'travel') {
+            query = query.in('category', ['travel', '여행']);
+          } else if (currentCategory === 'daily') {
+            query = query.in('category', ['daily', '일상', '일상생활']);
+          } else if (currentCategory === 'food') {
+            query = query.in('category', ['food', '맛집', '음식']);
+          } else if (currentCategory === 'philosophy') {
+            query = query.in('category', ['philosophy', '철학']);
+          } else {
+            query = query.eq('category', currentCategory);
+          }
         }
 
         const { data: posts, error } = await query;
 
-        // 🔍 콘솔창(F12)에서 데이터 수신 여부를 확실히 확인할 수 있는 디버깅 로그
         console.log("🔍 Supabase 조회 결과:", { posts, error, currentCategory });
 
         if (error) {
