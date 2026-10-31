@@ -150,7 +150,8 @@
         categories: [
           { id: 'travel', label: '✈️ 여행' },
           { id: 'daily', label: '☕ 일상' },
-          { id: 'food', label: '🍽️ 맛집' }
+          { id: 'food', label: '🍽️ 맛집' },
+          { id: 'philosophy', label: '🧠 철학' } // 💡 철학 카테고리 추가됨
         ]
       },
       language: {
@@ -169,7 +170,7 @@
       }
     };
 
-    // 현재 사이트 판별 (호스트 주소 또는 수동 설정)
+    // 도메인 주소 판별 로직
     let CURRENT_SITE_KEY = 'withkeke';
     const host = window.location.hostname.toLowerCase();
 
@@ -372,7 +373,6 @@
 
     async function loadPostsForAutocomplete() {
       try {
-        // 💡 현재 사이트(site_id)의 글만 대상으로 자동완성 수집
         const { data: posts } = await supabaseClient
           .from('posts')
           .select('title')
@@ -492,7 +492,6 @@
       container.innerHTML = `<div class="text-center py-12 text-gray-400">🎲 숨겨진 게시글을 뽑는 중...</div>`;
 
       try {
-        // 💡 현재 사이트(site_id)로 엄격히 제한
         let query = supabaseClient
           .from('posts')
           .select('*')
@@ -938,7 +937,6 @@
 
         const imageUrlValue = attachments.length > 0 ? JSON.stringify(attachments) : null;
 
-        // 💡 글 저장 시 현재 사이트의 site_id를 함께 저장
         const { error: dbError } = await supabaseClient
           .from('posts')
           .insert([{ 
@@ -972,7 +970,6 @@
       container.innerHTML = `<div class="text-center py-12 text-gray-400">게시글을 불러오는 중...</div>`;
 
       try {
-        // 💡 [핵심 수정] 항상 현재 사이트(site_id)에 해당하는 글만 조회하도록 eq('site_id', currentSiteConfig.siteId) 적용
         let query = supabaseClient
           .from('posts')
           .select('*')
