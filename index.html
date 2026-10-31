@@ -151,7 +151,7 @@
           { id: 'travel', label: '✈️ 여행' },
           { id: 'daily', label: '☕ 일상' },
           { id: 'food', label: '🍽️ 맛집' },
-          { id: 'philosophy', label: '🧠 철학' } // 💡 철학 카테고리 추가됨
+          { id: 'philosophy', label: '🧠 철학' }
         ]
       },
       language: {
@@ -170,7 +170,7 @@
       }
     };
 
-    // 도메인 주소 판별 로직
+    // 도메인 감지 로직 (withkeke 도메인 우선 적용)
     let CURRENT_SITE_KEY = 'withkeke';
     const host = window.location.hostname.toLowerCase();
 
@@ -525,7 +525,7 @@
           .update({ search_count: newCount })
           .eq('id', randomPost.id);
 
-        renderSinglePostResult(randomPost, "🎲 랜덤 추천 게시물입니다! (자주 안 보였던 숨은 글)");
+        renderSinglePostResult(randomPost, "🎲 랜덤 추천 게시물입니다!");
 
       } catch (err) {
         container.innerHTML = `<div class="bg-white p-8 rounded-2xl border text-center text-red-500">⚠️ 오류: ${escapeHtml(err.message)}</div>`;
