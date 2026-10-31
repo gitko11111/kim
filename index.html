@@ -169,7 +169,7 @@
       }
     };
 
-    // 💡 기본값을 'withkeke'로 설정하여 케케 게시판이 기본으로 뜨게 수정
+    // 현재 사이트 판별 (호스트 주소 또는 수동 설정)
     let CURRENT_SITE_KEY = 'withkeke';
     const host = window.location.hostname.toLowerCase();
 
@@ -372,7 +372,12 @@
 
     async function loadPostsForAutocomplete() {
       try {
-        const { data: posts } = await supabaseClient.from('posts').select('title');
+        // 💡 현재 사이트(site_id)의 글만 대상으로 자동완성 수집
+        const { data: posts } = await supabaseClient
+          .from('posts')
+          .select('title')
+          .eq('site_id', currentSiteConfig.siteId);
+
         if (!posts) return;
 
         const stopWords = new Set([
@@ -401,7 +406,7 @@
           });
         });
 
-        const localHistory = JSON.parse(localStorage.getItem('my_search_history') || '[]');
+        const localHistory = JSON.parse(localStorage.getItem(`my_search_history_${currentSiteConfig.siteId}`) || '[]');
         localHistory.forEach(kw => {
           if (kw) wordCounts[kw] = (wordCounts[kw] || 0) + 5;
         });
@@ -456,11 +461,11 @@
         currentSearchDate = '';
 
         if (currentSearchKeyword && currentSearchKeyword.length >= 2) {
-          let localHistory = JSON.parse(localStorage.getItem('my_search_history') || '[]');
+          let localHistory = JSON.parse(localStorage.getItem(`my_search_history_${currentSiteConfig.siteId}`) || '[]');
           if (!localHistory.includes(currentSearchKeyword)) {
             localHistory.unshift(currentSearchKeyword);
             if (localHistory.length > 20) localHistory.pop();
-            localStorage.setItem('my_search_history', JSON.stringify(localHistory));
+            localStorage.setItem(`my_search_history_${currentSiteConfig.siteId}`, JSON.stringify(localHistory));
           }
         }
       }
@@ -487,9 +492,11 @@
       container.innerHTML = `<div class="text-center py-12 text-gray-400">🎲 숨겨진 게시글을 뽑는 중...</div>`;
 
       try {
+        // 💡 현재 사이트(site_id)로 엄격히 제한
         let query = supabaseClient
           .from('posts')
           .select('*')
+          .eq('site_id', currentSiteConfig.siteId)
           .order('search_count', { ascending: true })
           .order('created_at', { ascending: false })
           .limit(50);
@@ -931,9 +938,16 @@
 
         const imageUrlValue = attachments.length > 0 ? JSON.stringify(attachments) : null;
 
+        // 💡 글 저장 시 현재 사이트의 site_id를 함께 저장
         const { error: dbError } = await supabaseClient
           .from('posts')
-          .insert([{ category, title, content, image_url: imageUrlValue }]);
+          .insert([{ 
+            site_id: currentSiteConfig.siteId, 
+            category, 
+            title, 
+            content, 
+            image_url: imageUrlValue 
+          }]);
 
         if (dbError) {
           alert("글 저장 실패: " + dbError.message);
@@ -958,7 +972,12 @@
       container.innerHTML = `<div class="text-center py-12 text-gray-400">게시글을 불러오는 중...</div>`;
 
       try {
-        let query = supabaseClient.from('posts').select('*').order('created_at', { ascending: false });
+        // 💡 [핵심 수정] 항상 현재 사이트(site_id)에 해당하는 글만 조회하도록 eq('site_id', currentSiteConfig.siteId) 적용
+        let query = supabaseClient
+          .from('posts')
+          .select('*')
+          .eq('site_id', currentSiteConfig.siteId)
+          .order('created_at', { ascending: false });
 
         if (currentCategory !== 'all') {
           query = query.eq('category', currentCategory);
