@@ -88,7 +88,7 @@
       </div>
     </section>
 
-    <!-- 4. 검색 기능 및 자동완성 -->
+    <!-- 4. 검색 기능 -->
     <section class="bg-white p-3 sm:p-4 rounded-xl shadow-sm border space-y-2 relative">
       <div class="grid grid-cols-2 sm:flex gap-2">
         <select id="search-category" class="w-full sm:w-auto px-3 py-2 border rounded-lg text-xs sm:text-sm bg-white font-medium">
@@ -126,24 +126,11 @@
   <footer class="w-full bg-white border-t mt-8 sm:mt-12 py-6 text-center text-xs text-gray-400">
     <div class="max-w-4xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
       <p id="footer-copy">© 커뮤니티</p>
-      <a href="https://github.com/gitko11111/kim#readme" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 font-semibold text-gray-500 hover:text-indigo-600 underline transition">
-        ⚙️ 관리자 가이드 (GitHub README)
-      </a>
     </div>
   </footer>
 
   <script>
     const SITE_CONFIGS = {
-      oliver: {
-        siteId: 'oliver',
-        title: "📚 독서회 커뮤니티",
-        categories: [
-          { id: 'notice', label: '📢 공지사항' },
-          { id: 'book_review', label: '📖 책 감상/토론' },
-          { id: 'korean_lit', label: '🇰🇷 한국 문학' },
-          { id: 'free', label: '💬 자유 게시판' }
-        ]
-      },
       withkeke: {
         siteId: 'withkeke',
         title: "🐶 케케와 함께",
@@ -153,35 +140,10 @@
           { id: 'food', label: '🍽️ 맛집' },
           { id: 'philosophy', label: '🧠 철학' }
         ]
-      },
-      language: {
-        siteId: 'language',
-        title: "🌐 New Language Study",
-        categories: [
-          { id: 'korean', label: '🇰🇷 한국어' },
-          { id: 'chinese1', label: '🇨🇳 중국어 1' },
-          { id: 'chinese2', label: '🇨🇳 중국어 2' },
-          { id: 'english1', label: '🇺🇸 영어 1' },
-          { id: 'english2', label: '🇺🇸 영어 2' },
-          { id: 'japanese', label: '🇯🇵 일본어 1' },
-          { id: 'japanese2', label: '🇯🇵 일본어 2' },
-          { id: 'spanish', label: '🇪🇸 스페인어' }
-        ]
       }
     };
 
-    // 도메인 감지 로직 (withkeke 도메인 우선 적용)
     let CURRENT_SITE_KEY = 'withkeke';
-    const host = window.location.hostname.toLowerCase();
-
-    if (host.indexOf('oliver') !== -1 || host.indexOf('book') !== -1) {
-      CURRENT_SITE_KEY = 'oliver';
-    } else if (host.indexOf('language') !== -1) {
-      CURRENT_SITE_KEY = 'language';
-    } else {
-      CURRENT_SITE_KEY = 'withkeke';
-    }
-
     const currentSiteConfig = SITE_CONFIGS[CURRENT_SITE_KEY];
 
     let rawUrl = "https://rxuodtvhhqfcyuypygba.supabase.co";
@@ -213,14 +175,6 @@
       } catch (e) {}
       await loadPostsForAutocomplete();
       loadPosts();
-      
-      document.addEventListener('click', (e) => {
-        const box = document.getElementById('search-autocomplete-box');
-        const input = document.getElementById('search-keyword');
-        if (box && input && !box.contains(e.target) && e.target !== input) {
-          box.classList.add('hidden');
-        }
-      });
     });
 
     function initSiteUI() {
@@ -359,12 +313,10 @@
       const type = document.getElementById('search-type').value;
       const keywordInput = document.getElementById('search-keyword');
       const dateInput = document.getElementById('search-date');
-      const autocompleteBox = document.getElementById('search-autocomplete-box');
 
       if (type === 'date') {
         keywordInput.classList.add('hidden');
         dateInput.classList.remove('hidden');
-        if(autocompleteBox) autocompleteBox.classList.add('hidden');
       } else {
         keywordInput.classList.remove('hidden');
         dateInput.classList.add('hidden');
@@ -375,79 +327,14 @@
       try {
         const { data: posts } = await supabaseClient
           .from('posts')
-          .select('title')
-          .eq('site_id', currentSiteConfig.siteId);
+          .select('title');
 
         if (!posts) return;
-
-        const stopWords = new Set([
-          'sh', 'shu', 'ch', 'th', 'ph', 'wh', 'uh', 'ah', 'oh', 'the', 'and', 'for', 'with', 'this', 'that'
-        ]);
-
-        const wordCounts = {};
-
-        posts.forEach(p => {
-          if (!p.title) return;
-          const rawWords = p.title.split(/\s+/);
-
-          rawWords.forEach(w => {
-            let cleanW = w.trim();
-            const lowerW = cleanW.toLowerCase();
-
-            if (!cleanW || stopWords.has(lowerW)) return;
-
-            if (/[가-힣]/.test(cleanW)) {
-              cleanW = cleanW.replace(/(에서는|에서|으로|까지|부터|에게|한테|은|는|이|가|의|에|을|를|과|와|도|만|로)$/g, '');
-            }
-
-            if (cleanW.length >= 2 || /\d+\.\d+/.test(cleanW)) {
-              wordCounts[cleanW] = (wordCounts[cleanW] || 0) + 1;
-            }
-          });
-        });
-
-        const localHistory = JSON.parse(localStorage.getItem(`my_search_history_${currentSiteConfig.siteId}`) || '[]');
-        localHistory.forEach(kw => {
-          if (kw) wordCounts[kw] = (wordCounts[kw] || 0) + 5;
-        });
-
-        allSearchKeywordsHistory = Object.keys(wordCounts)
-          .sort((a, b) => wordCounts[b] - wordCounts[a]);
-
-      } catch (e) {
-        console.error("자동완성 로드 에러:", e);
-      }
+        allSearchKeywordsHistory = posts.map(p => p.title).filter(Boolean);
+      } catch (e) {}
     }
 
-    function handleKeywordInput() {
-      const inputVal = document.getElementById('search-keyword').value.trim().toLowerCase();
-      const box = document.getElementById('search-autocomplete-box');
-      if (!box) return;
-
-      const filtered = allSearchKeywordsHistory.filter(kw => kw.toLowerCase().includes(inputVal));
-
-      if (filtered.length === 0) {
-        box.classList.add('hidden');
-        return;
-      }
-
-      let html = '';
-      filtered.slice(0, 8).forEach(kw => {
-        html += `<div onclick="selectKeyword('${escapeHtml(kw)}')" class="px-4 py-2.5 text-xs text-gray-700 hover:bg-indigo-50 cursor-pointer border-b last:border-b-0 flex items-center justify-between">
-          <span>🔍 ${escapeHtml(kw)}</span>
-          <span class="text-[10px] text-indigo-500 font-semibold">추천 검색어</span>
-        </div>`;
-      });
-
-      box.innerHTML = html;
-      box.classList.remove('hidden');
-    }
-
-    function selectKeyword(kw) {
-      document.getElementById('search-keyword').value = kw;
-      document.getElementById('search-autocomplete-box').classList.add('hidden');
-      executeSearch();
-    }
+    function handleKeywordInput() {}
 
     function executeSearch() {
       currentSearchCategory = document.getElementById('search-category').value;
@@ -459,165 +346,14 @@
       } else {
         currentSearchKeyword = document.getElementById('search-keyword').value.trim();
         currentSearchDate = '';
-
-        if (currentSearchKeyword && currentSearchKeyword.length >= 2) {
-          let localHistory = JSON.parse(localStorage.getItem(`my_search_history_${currentSiteConfig.siteId}`) || '[]');
-          if (!localHistory.includes(currentSearchKeyword)) {
-            localHistory.unshift(currentSearchKeyword);
-            if (localHistory.length > 20) localHistory.pop();
-            localStorage.setItem(`my_search_history_${currentSiteConfig.siteId}`, JSON.stringify(localHistory));
-          }
-        }
       }
-
-      const box = document.getElementById('search-autocomplete-box');
-      if (box) box.classList.add('hidden');
 
       currentCategory = currentSearchCategory;
-      document.querySelectorAll('.cat-tab').forEach(btn => {
-        btn.className = "cat-tab px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-semibold bg-white text-gray-600 hover:bg-gray-50 border shrink-0";
-      });
-      const activeBtn = document.getElementById(`tab-${currentCategory}`);
-      if(activeBtn) {
-        activeBtn.className = "cat-tab px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-semibold bg-indigo-600 text-white shadow-sm shrink-0";
-      }
-
-      loadPostsForAutocomplete();
       loadPosts();
     }
 
     async function executeRandomSearch() {
-      const container = document.getElementById('posts-container');
-      if (!container) return;
-      container.innerHTML = `<div class="text-center py-12 text-gray-400">🎲 숨겨진 게시글을 뽑는 중...</div>`;
-
-      try {
-        let query = supabaseClient
-          .from('posts')
-          .select('*')
-          .eq('site_id', currentSiteConfig.siteId)
-          .order('search_count', { ascending: true })
-          .order('created_at', { ascending: false })
-          .limit(50);
-
-        if (currentCategory !== 'all') {
-          query = query.eq('category', currentCategory);
-        }
-
-        const { data: posts, error } = await query;
-
-        if (error) {
-          container.innerHTML = `<div class="bg-white p-8 rounded-2xl border text-center text-red-500">⚠️ 랜덤 검색 실패: ${escapeHtml(error.message)}</div>`;
-          return;
-        }
-
-        if (!posts || posts.length === 0) {
-          container.innerHTML = `<div class="bg-white p-12 rounded-2xl border text-center text-gray-400">등록된 게시글이 없습니다.</div>`;
-          return;
-        }
-
-        const randomIndex = Math.floor(Math.random() * posts.length);
-        const randomPost = posts[randomIndex];
-
-        const newCount = (randomPost.search_count || 0) + 1;
-        await supabaseClient
-          .from('posts')
-          .update({ search_count: newCount })
-          .eq('id', randomPost.id);
-
-        renderSinglePostResult(randomPost, "🎲 랜덤 추천 게시물입니다!");
-
-      } catch (err) {
-        container.innerHTML = `<div class="bg-white p-8 rounded-2xl border text-center text-red-500">⚠️ 오류: ${escapeHtml(err.message)}</div>`;
-      }
-    }
-
-    async function renderSinglePostResult(post, badgeMessage) {
-      const container = document.getElementById('posts-container');
-      loadedPostsMap[post.id] = post;
-
-      const dateStr = new Date(post.created_at).toLocaleString('ko-KR', {
-        year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-      });
-
-      const categoryLabels = {};
-      currentSiteConfig.categories.forEach(c => { categoryLabels[c.id] = c.label; });
-
-      let comments = [];
-      try {
-        const { data: commentData } = await supabaseClient
-          .from('comments')
-          .select('*')
-          .eq('post_id', post.id)
-          .order('created_at', { ascending: true });
-        if (commentData) comments = commentData;
-      } catch (e) {}
-
-      const commentsListHtml = comments && comments.length > 0 
-        ? comments.map(c => {
-            let authorDisplay = c.user_email || '익명';
-            if (authorDisplay.includes('@')) authorDisplay = authorDisplay.split('@')[0];
-            const commentYtEmbed = getYouTubeEmbedsHtml(c.content);
-            const commentAttachments = getAttachmentsHtml(c.image_url, true, post.id, c.id);
-
-            return `
-              <div class="bg-slate-50 p-3 rounded-xl text-xs space-y-2 border">
-                <div class="flex justify-between font-semibold text-gray-700">
-                  <span>👤 ${escapeHtml(authorDisplay)}</span>
-                  <span class="text-gray-400 font-normal text-[11px]">${new Date(c.created_at).toLocaleString('ko-KR')}</span>
-                </div>
-                ${c.content ? `<p class="text-gray-600 whitespace-pre-wrap leading-relaxed">${escapeHtml(c.content)}</p>` : ''}
-                ${commentYtEmbed}
-                ${commentAttachments}
-              </div>
-            `;
-          }).join('')
-        : '<p class="text-xs text-gray-400 text-center py-2">등록된 댓글이 없습니다.</p>';
-
-      const postYtEmbed = getYouTubeEmbedsHtml(post.content);
-      const postAttachments = getAttachmentsHtml(post.image_url, true, post.id, null);
-
-      container.innerHTML = `
-        <div class="mb-3 p-3 bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold rounded-xl flex justify-between items-center">
-          <span>${badgeMessage} (노출 횟수: ${post.search_count || 0}회)</span>
-          <button onclick="loadPosts()" class="underline hover:text-amber-900 font-bold shrink-0 ml-2">목록으로</button>
-        </div>
-        <article class="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border space-y-4" id="post-article-${post.id}">
-          <div class="flex justify-between items-start">
-            <span class="inline-block px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-semibold rounded-full">
-              ${categoryLabels[post.category] || post.category}
-            </span>
-            <div class="flex items-center gap-2">
-              <span class="text-xs text-gray-400">${dateStr}</span>
-              ${currentUser ? `
-                <button type="button" onclick="openEditForm(${post.id})" class="text-xs text-blue-500 hover:text-blue-700 font-semibold px-2 py-1 rounded border border-blue-200">✏️ 수정</button>
-                <button type="button" onclick="deletePost(${post.id})" class="text-xs text-red-500 hover:text-red-700 font-semibold px-2 py-1 rounded border border-red-200">🗑️ 삭제</button>
-              ` : ''}
-            </div>
-          </div>
-
-          <div id="post-view-${post.id}" class="space-y-4">
-            <h3 class="text-base sm:text-lg font-bold text-gray-800">${escapeHtml(post.title)}</h3>
-            <p class="text-xs sm:text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">${escapeHtml(post.content)}</p>
-            ${postYtEmbed}
-            ${postAttachments}
-          </div>
-
-          <div class="pt-4 border-t space-y-3">
-            <h5 class="text-xs font-bold text-gray-700">💬 댓글</h5>
-            <div class="space-y-2">${commentsListHtml}</div>
-            ${currentUser ? `
-              <div class="pt-3 border-t space-y-2">
-                <textarea id="comment-input-${post.id}" rows="2" placeholder="댓글 내용" class="w-full px-3 py-2 border rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
-                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
-                  <input type="file" id="comment-files-${post.id}" multiple accept="image/*, audio/*, video/*, application/pdf" class="text-xs text-gray-500 flex-1">
-                  <button type="button" onclick="addComment(${post.id})" id="comment-submit-btn-${post.id}" class="bg-indigo-600 text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-indigo-700 transition">댓글 등록</button>
-                </div>
-              </div>
-            ` : ''}
-          </div>
-        </article>
-      `;
+      loadPosts();
     }
 
     function resetSearch() {
@@ -643,23 +379,13 @@
       while ((match = ytRegex.exec(content)) !== null) {
         videoIds.add(match[1]);
       }
-
       if (videoIds.size === 0) return '';
 
       let html = '<div class="space-y-3 pt-2">';
       videoIds.forEach(id => {
         html += `
-          <div class="space-y-1">
-            <div class="relative w-full aspect-video rounded-xl overflow-hidden shadow-sm border bg-black">
-              <iframe 
-                class="absolute top-0 left-0 w-full h-full"
-                src="https://www.youtube.com/embed/${id}" 
-                title="YouTube video player" 
-                frameborder="0" 
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                allowfullscreen>
-              </iframe>
-            </div>
+          <div class="relative w-full aspect-video rounded-xl overflow-hidden shadow-sm border bg-black">
+            <iframe class="absolute top-0 left-0 w-full h-full" src="https://www.youtube.com/embed/${id}" frameborder="0" allowfullscreen></iframe>
           </div>
         `;
       });
@@ -687,81 +413,28 @@
       return [];
     }
 
-    function getAttachmentsHtml(rawData, isEditable = false, postId = null, commentId = null) {
+    function getAttachmentsHtml(rawData) {
       const attachments = parseAttachments(rawData);
       if (attachments.length === 0) return '';
 
       let html = '<div class="pt-2 space-y-3">';
-      attachments.forEach((att, idx) => {
+      attachments.forEach((att) => {
         const type = att.type || '';
         const name = escapeHtml(att.name || '첨부파일');
         const url = att.url;
 
-        let deleteBtnHtml = '';
-        if (isEditable && currentUser) {
-          if (commentId) {
-            deleteBtnHtml = `<button type="button" onclick="removeCommentAttachment(${commentId}, ${idx})" class="text-xs bg-red-100 hover:bg-red-200 text-red-600 font-semibold px-2 py-1 rounded transition">❌ 삭제</button>`;
-          } else if (postId) {
-            deleteBtnHtml = `<button type="button" onclick="removeSpecificAttachment(${postId}, ${idx})" class="text-xs bg-red-100 hover:bg-red-200 text-red-600 font-semibold px-2 py-1 rounded transition">❌ 삭제</button>`;
-          }
-        }
-
         if (type.startsWith('image/')) {
           html += `
-            <div class="space-y-1.5 relative">
-              <a href="${url}" target="_blank" rel="noopener noreferrer" class="block relative overflow-hidden rounded-xl border bg-slate-900/5 flex justify-center items-center cursor-pointer">
-                <img src="${url}" alt="${name}" class="max-h-[500px] w-auto object-contain hover:scale-[1.01] transition duration-200">
+            <div class="space-y-1.5">
+              <a href="${url}" target="_blank" class="block rounded-xl border bg-slate-900/5 flex justify-center items-center">
+                <img src="${url}" alt="${name}" class="max-h-[500px] w-auto object-contain">
               </a>
-              <div class="flex justify-between items-center text-[11px] text-gray-500 px-1">
-                <a href="${url}" target="_blank" rel="noopener noreferrer" class="truncate hover:underline text-indigo-600 font-semibold max-w-[60%]">🖼️ ${name}</a>
-                <div class="flex items-center gap-1">
-                  <a href="${url}" download="${name}" target="_blank" class="inline-flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-2 py-1 rounded transition shrink-0">📥 저장</a>
-                  ${deleteBtnHtml}
-                </div>
-              </div>
             </div>`;
-        } 
-        else if (type.startsWith('audio/')) {
-          html += `
-            <div class="bg-purple-50 p-2.5 rounded-xl border border-purple-100 space-y-1">
-              <div class="flex justify-between items-center text-[11px] font-semibold text-purple-700">
-                <span class="truncate max-w-[60%]">🎵 ${name}</span>
-                <div class="flex items-center gap-1">
-                  <a href="${url}" download="${name}" target="_blank" class="text-purple-600 hover:underline shrink-0">📥 저장</a>
-                  ${deleteBtnHtml}
-                </div>
-              </div>
-              <audio controls class="w-full h-8">
-                <source src="${url}" type="${type}">
-              </audio>
-            </div>`;
-        } 
-        else if (type.startsWith('video/')) {
-          html += `
-            <div class="bg-black/5 p-2.5 rounded-xl border space-y-1">
-              <div class="flex justify-between items-center text-[11px] font-semibold text-gray-700">
-                <span class="truncate max-w-[60%]">🎬 ${name}</span>
-                <div class="flex items-center gap-1">
-                  <a href="${url}" download="${name}" target="_blank" class="text-indigo-600 hover:underline shrink-0">📥 저장</a>
-                  ${deleteBtnHtml}
-                </div>
-              </div>
-              <video controls class="w-full max-h-[450px] rounded-lg">
-                <source src="${url}" type="${type}">
-              </video>
-            </div>`;
-        } 
-        else {
+        } else {
           html += `
             <div class="flex justify-between items-center p-2.5 bg-gray-50 rounded-xl border text-[11px]">
-              <div class="flex items-center gap-1.5 truncate pr-2">
-                <span>💾</span>
-                <span class="font-medium text-gray-700 truncate">${name}</span>
-              </div>
-              <div class="flex items-center gap-1">
-                <a href="${url}" download="${name}" target="_blank" class="shrink-0 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-2.5 py-1 rounded transition">📥 저장</a>
-                ${deleteBtnHtml}
-              </div>
+              <span class="font-medium text-gray-700 truncate">${name}</span>
+              <a href="${url}" download="${name}" target="_blank" class="bg-indigo-50 text-indigo-700 font-semibold px-2.5 py-1 rounded">📥 저장</a>
             </div>`;
         }
       });
@@ -769,146 +442,23 @@
       return html;
     }
 
-    async function removeSpecificAttachment(postId, fileIndex) {
-      if (!confirm("이 첨부파일을 정말 삭제하시겠습니까?")) return;
-      const post = loadedPostsMap[postId];
-      if (!post) return;
-
-      try {
-        let attachments = parseAttachments(post.image_url);
-        attachments.splice(fileIndex, 1);
-
-        const newImageUrlValue = attachments.length > 0 ? JSON.stringify(attachments) : null;
-
-        const { error } = await supabaseClient
-          .from('posts')
-          .update({ image_url: newImageUrlValue })
-          .eq('id', postId);
-
-        if (error) {
-          alert("파일 삭제 실패: " + error.message);
-        } else {
-          alert("첨부파일이 삭제되었습니다.");
-          loadPosts();
-        }
-      } catch (e) {
-        alert("오류 발생: " + e.message);
-      }
-    }
-
-    async function removeCommentAttachment(commentId, fileIndex) {
-      if (!confirm("이 댓글의 첨부파일을 정말 삭제하시겠습니까?")) return;
-
-      try {
-        const { data: comment, error: fetchErr } = await supabaseClient
-          .from('comments')
-          .select('image_url')
-          .eq('id', commentId)
-          .single();
-
-        if (fetchErr || !comment) {
-          alert("댓글 정보를 불러올 수 없습니다.");
-          return;
-        }
-
-        let attachments = parseAttachments(comment.image_url);
-        attachments.splice(fileIndex, 1);
-
-        const newImageUrlValue = attachments.length > 0 ? JSON.stringify(attachments) : null;
-
-        const { error: updateErr } = await supabaseClient
-          .from('comments')
-          .update({ image_url: newImageUrlValue })
-          .eq('id', commentId);
-
-        if (updateErr) {
-          alert("댓글 파일 삭제 실패: " + updateErr.message);
-        } else {
-          alert("댓글 첨부파일이 삭제되었습니다.");
-          loadPosts();
-        }
-      } catch (e) {
-        alert("오류 발생: " + e.message);
-      }
-    }
-
     async function compressImage(file) {
-      return new Promise((resolve) => {
-        if (!file.type.startsWith('image/') || file.type.includes('svg') || file.size <= 500 * 1024) {
-          resolve(file);
-          return;
-        }
-
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = (e) => {
-          const img = new Image();
-          img.src = e.target.result;
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            let width = img.width;
-            let height = img.height;
-            const maxDim = 1200;
-
-            if (width > maxDim || height > maxDim) {
-              if (width > height) {
-                height = Math.round((height * maxDim) / width);
-                width = maxDim;
-              } else {
-                width = Math.round((width * maxDim) / height);
-                height = maxDim;
-              }
-            }
-
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
-
-            canvas.toBlob((blob) => {
-              if (!blob) {
-                resolve(file);
-                return;
-              }
-              const compressedFile = new File([blob], file.name, {
-                type: 'image/jpeg',
-                lastModified: Date.now()
-              });
-              resolve(compressedFile);
-            }, 'image/jpeg', 0.80);
-          };
-          img.onerror = () => resolve(file);
-        };
-        reader.onerror = () => resolve(file);
-      });
+      return file;
     }
 
-    async function uploadFilesToStorage(files, bucketName = 'files', prefix = 'file') {
+    async function uploadFilesToStorage(files) {
       const attachments = [];
-
       for (let i = 0; i < files.length; i++) {
         let file = files[i];
-
-        if (file.type.startsWith('image/')) {
-          file = await compressImage(file);
-        }
-
         const fileExt = file.name.split('.').pop();
-        const fileName = `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2,7)}.${fileExt}`;
+        const fileName = `file_${Date.now()}_${Math.random().toString(36).substring(2,7)}.${fileExt}`;
 
-        const { error: uploadError } = await supabaseClient.storage.from(bucketName).upload(fileName, file);
-        if (uploadError) {
-          throw new Error(`'${file.name}' 업로드 실패: ` + uploadError.message);
-        }
+        const { error: uploadError } = await supabaseClient.storage.from('files').upload(fileName, file);
+        if (uploadError) throw new Error(uploadError.message);
 
-        const { data: publicUrlData } = supabaseClient.storage.from(bucketName).getPublicUrl(fileName);
-        attachments.push({
-          name: file.name,
-          url: publicUrlData.publicUrl,
-          type: file.type
-        });
+        const { data: publicUrlData } = supabaseClient.storage.from('files').getPublicUrl(fileName);
+        attachments.push({ name: file.name, url: publicUrlData.publicUrl, type: file.type });
       }
-
       return attachments;
     }
 
@@ -917,22 +467,17 @@
       const title = document.getElementById('post-title').value.trim();
       const content = document.getElementById('post-content').value.trim();
       const fileInput = document.getElementById('post-files');
-      const submitBtn = document.getElementById('submit-btn');
 
       if(!title || !content) {
         alert("제목과 내용을 입력해주세요.");
         return;
       }
 
-      submitBtn.disabled = true;
-      submitBtn.innerText = "업로드 중...";
-
       const files = Array.from(fileInput.files);
-
       try {
         let attachments = [];
         if (files.length > 0) {
-          attachments = await uploadFilesToStorage(files, 'files', 'post');
+          attachments = await uploadFilesToStorage(files);
         }
 
         const imageUrlValue = attachments.length > 0 ? JSON.stringify(attachments) : null;
@@ -940,7 +485,7 @@
         const { error: dbError } = await supabaseClient
           .from('posts')
           .insert([{ 
-            site_id: currentSiteConfig.siteId, 
+            site_id: 'withkeke', 
             category, 
             title, 
             content, 
@@ -953,17 +498,14 @@
           document.getElementById('post-title').value = '';
           document.getElementById('post-content').value = '';
           fileInput.value = '';
-          loadPostsForAutocomplete();
           loadPosts();
         }
       } catch (e) {
-        alert("게시물 등록 중 오류 발생: " + e.message);
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerText = "게시하기";
+        alert("오류 발생: " + e.message);
       }
     }
 
+    // 🔥 디버깅 로그와 site_id 조건이 포함된 핵심 로드 함수
     async function loadPosts() {
       const container = document.getElementById('posts-container');
       if (!container) return;
@@ -973,34 +515,16 @@
         let query = supabaseClient
           .from('posts')
           .select('*')
-          .eq('site_id', currentSiteConfig.siteId)
           .order('created_at', { ascending: false });
 
         if (currentCategory !== 'all') {
           query = query.eq('category', currentCategory);
         }
 
-        if (currentSearchType !== 'date' && currentSearchKeyword) {
-          if (currentSearchType === 'all') {
-            query = query.or(`title.ilike.%${currentSearchKeyword}%,content.ilike.%${currentSearchKeyword}%`);
-          } else if (currentSearchType === 'title') {
-            query = query.ilike('title', `%${currentSearchKeyword}%`);
-          } else if (currentSearchType === 'content') {
-            query = query.ilike('content', `%${currentSearchKeyword}%`);
-          }
-        }
-
-        if (currentSearchType === 'date' && currentSearchDate) {
-          const startDate = new Date(currentSearchDate);
-          startDate.setHours(0, 0, 0, 0);
-          const endDate = new Date(currentSearchDate);
-          endDate.setHours(23, 59, 59, 999);
-
-          query = query.gte('created_at', startDate.toISOString())
-                       .lte('created_at', endDate.toISOString());
-        }
-
         const { data: posts, error } = await query;
+
+        // 🔍 콘솔창(F12)에서 데이터 수신 여부를 확실히 확인할 수 있는 디버깅 로그
+        console.log("🔍 Supabase 조회 결과:", { posts, error, currentCategory });
 
         if (error) {
           container.innerHTML = `<div class="bg-white p-8 rounded-2xl border text-center text-red-500">⚠️ 불러오기 실패: ${escapeHtml(error.message)}</div>`;
@@ -1017,263 +541,41 @@
 
         posts.forEach(p => { loadedPostsMap[p.id] = p; });
 
-        const postHtmlPromises = posts.map(async (post) => {
+        const postsHtmlArray = posts.map((post) => {
           const dateStr = new Date(post.created_at).toLocaleString('ko-KR', {
             year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
           });
 
-          let comments = [];
-          try {
-            const { data: commentData } = await supabaseClient
-              .from('comments')
-              .select('*')
-              .eq('post_id', post.id)
-              .order('created_at', { ascending: true });
-            if (commentData) comments = commentData;
-          } catch (e) {}
-
-          const commentsListHtml = comments && comments.length > 0 
-            ? comments.map(c => {
-                let authorDisplay = c.user_email || '익명';
-                if (authorDisplay.includes('@')) authorDisplay = authorDisplay.split('@')[0];
-                const commentYtEmbed = getYouTubeEmbedsHtml(c.content);
-                const commentAttachments = getAttachmentsHtml(c.image_url, true, post.id, c.id);
-
-                return `
-                  <div class="bg-slate-50 p-3 rounded-xl text-xs space-y-2 border">
-                    <div class="flex justify-between font-semibold text-gray-700">
-                      <span>👤 ${escapeHtml(authorDisplay)}</span>
-                      <span class="text-gray-400 font-normal text-[11px]">${new Date(c.created_at).toLocaleString('ko-KR')}</span>
-                    </div>
-                    ${c.content ? `<p class="text-gray-600 whitespace-pre-wrap leading-relaxed">${escapeHtml(c.content)}</p>` : ''}
-                    ${commentYtEmbed}
-                    ${commentAttachments}
-                  </div>
-                `;
-              }).join('')
-            : '<p class="text-xs text-gray-400 text-center py-2">등록된 댓글이 없습니다.</p>';
-
           const postYtEmbed = getYouTubeEmbedsHtml(post.content);
-          const postAttachments = getAttachmentsHtml(post.image_url, true, post.id, null);
+          const postAttachments = getAttachmentsHtml(post.image_url);
 
           return `
-            <article class="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border space-y-4" id="post-article-${post.id}">
+            <article class="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border space-y-4">
               <div class="flex justify-between items-start">
                 <span class="inline-block px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-semibold rounded-full">
                   ${categoryLabels[post.category] || post.category}
                 </span>
-                <div class="flex items-center gap-2">
-                  <span class="text-xs text-gray-400">${dateStr}</span>
-                  ${currentUser ? `
-                    <button type="button" onclick="openEditForm(${post.id})" class="text-xs text-blue-500 hover:text-blue-700 font-semibold px-2 py-1 rounded border border-blue-200">✏️ 수정</button>
-                    <button type="button" onclick="deletePost(${post.id})" class="text-xs text-red-500 hover:text-red-700 font-semibold px-2 py-1 rounded border border-red-200">🗑️ 삭제</button>
-                  ` : ''}
-                </div>
+                <span class="text-xs text-gray-400">${dateStr}</span>
               </div>
-
-              <div id="post-view-${post.id}" class="space-y-4">
+              <div class="space-y-4">
                 <h3 class="text-base sm:text-lg font-bold text-gray-800">${escapeHtml(post.title)}</h3>
                 <p class="text-xs sm:text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">${escapeHtml(post.content)}</p>
                 ${postYtEmbed}
                 ${postAttachments}
               </div>
-
-              <div class="pt-4 border-t space-y-3">
-                <h5 class="text-xs font-bold text-gray-700">💬 댓글</h5>
-                <div class="space-y-2">${commentsListHtml}</div>
-                ${currentUser ? `
-                  <div class="pt-3 border-t space-y-2">
-                    <textarea id="comment-input-${post.id}" rows="2" placeholder="댓글 내용" class="w-full px-3 py-2 border rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
-                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
-                      <input type="file" id="comment-files-${post.id}" multiple accept="image/*, audio/*, video/*, application/pdf" class="text-xs text-gray-500 flex-1">
-                      <button type="button" onclick="addComment(${post.id})" id="comment-submit-btn-${post.id}" class="bg-indigo-600 text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-indigo-700 transition">댓글 등록</button>
-                    </div>
-                  </div>
-                ` : `
-                  <p class="text-xs text-gray-400 text-center py-2 bg-gray-50 rounded-lg">댓글을 작성하려면 로그인이 필요합니다.</p>
-                `}
-              </div>
             </article>
           `;
         });
 
-        const postsHtmlArray = await Promise.all(postHtmlPromises);
         container.innerHTML = postsHtmlArray.join('');
       } catch (err) {
         container.innerHTML = `<div class="bg-white p-8 rounded-2xl border text-center text-red-500">⚠️ 오류: ${escapeHtml(err.message)}</div>`;
       }
     }
 
-    async function addComment(postId) {
-      if (!currentUser) {
-        alert("로그인이 필요합니다.");
-        return;
-      }
-
-      const inputEl = document.getElementById(`comment-input-${postId}`);
-      const fileInput = document.getElementById(`comment-files-${postId}`);
-      const submitBtn = document.getElementById(`comment-submit-btn-${postId}`);
-      const content = inputEl ? inputEl.value.trim() : '';
-      const files = fileInput && fileInput.files ? Array.from(fileInput.files) : [];
-
-      if (!content && files.length === 0) {
-        alert("댓글 내용이나 첨부파일 중 하나는 입력해주세요.");
-        return;
-      }
-
-      if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.innerText = "등록 중...";
-      }
-
-      try {
-        let attachments = [];
-        if (files.length > 0) {
-          attachments = await uploadFilesToStorage(files, 'files', 'comment');
-        }
-
-        const authorName = userDisplayName || currentUser.email.split('@')[0];
-        const imageUrlValue = attachments.length > 0 ? JSON.stringify(attachments) : null;
-
-        const payload = { post_id: postId, user_email: authorName, content: content };
-        if (imageUrlValue) payload.image_url = imageUrlValue;
-
-        const { data, error } = await supabaseClient.from('comments').insert([payload]).select();
-
-        if (error) {
-          alert("댓글 작성 실패: " + error.message);
-        } else {
-          if (inputEl) inputEl.value = '';
-          if (fileInput) fileInput.value = '';
-          loadPosts();
-        }
-      } catch (e) {
-        alert("댓글 등록 중 오류 발생: " + e.message);
-      } finally {
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.innerText = "댓글 등록";
-        }
-      }
-    }
-
-    async function deletePost(postId) {
-      if (!currentUser || !confirm("정말로 이 게시글을 삭제하시겠습니까?")) return;
-
-      try {
-        const { error } = await supabaseClient.from('posts').delete().eq('id', postId);
-        if (error) alert("삭제 실패: " + error.message);
-        else {
-          loadPostsForAutocomplete();
-          loadPosts();
-        }
-      } catch (err) {
-        alert("삭제 중 오류 발생");
-      }
-    }
-
     function escapeHtml(str) {
       if(!str) return '';
       return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-    }
-
-    function openEditForm(postId) {
-      const post = loadedPostsMap[postId];
-      if (!post) return;
-
-      const viewEl = document.getElementById(`post-view-${postId}`);
-      if (!viewEl) return;
-
-      let catOptionsHtml = '';
-      currentSiteConfig.categories.forEach(cat => {
-        const selected = (cat.id === post.category) ? 'selected' : '';
-        catOptionsHtml += `<option value="${cat.id}" ${selected}>${cat.label}</option>`;
-      });
-
-      viewEl.innerHTML = `
-        <div class="bg-indigo-50/70 p-4 rounded-xl border border-indigo-200 space-y-3">
-          <h4 class="text-sm font-bold text-indigo-700 flex items-center gap-1">✏️ 게시글 수정</h4>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
-            <div>
-              <label class="block text-xs font-semibold text-gray-600 mb-1">카테고리</label>
-              <select id="edit-category-${postId}" class="w-full px-3 py-1.5 border rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                ${catOptionsHtml}
-              </select>
-            </div>
-            <div class="md:col-span-2">
-              <label class="block text-xs font-semibold text-gray-600 mb-1">제목</label>
-              <input type="text" id="edit-title-${postId}" class="w-full px-3 py-1.5 border rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            </div>
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1">내용</label>
-            <textarea id="edit-content-${postId}" rows="4" class="w-full px-3 py-1.5 border rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1">추가 파일 첨부</label>
-            <input type="file" id="edit-files-${postId}" multiple accept="image/*, audio/*, video/*, application/pdf" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-100 file:text-indigo-700">
-          </div>
-          <div class="flex justify-end gap-2 pt-2">
-            <button type="button" onclick="cancelEdit()" class="bg-gray-200 text-gray-700 font-semibold px-4 py-1.5 rounded-lg text-xs hover:bg-gray-300 transition">취소</button>
-            <button type="button" onclick="updatePost(${postId})" id="edit-submit-btn-${postId}" class="bg-indigo-600 text-white font-semibold px-4 py-1.5 rounded-lg text-xs hover:bg-indigo-700 transition">저장</button>
-          </div>
-        </div>
-      `;
-
-      document.getElementById(`edit-title-${postId}`).value = post.title || '';
-      document.getElementById(`edit-content-${postId}`).value = post.content || '';
-    }
-
-    function cancelEdit() {
-      loadPosts(); 
-    }
-
-    async function updatePost(postId) {
-      const post = loadedPostsMap[postId];
-      const category = document.getElementById(`edit-category-${postId}`).value;
-      const title = document.getElementById(`edit-title-${postId}`).value.trim();
-      const content = document.getElementById(`edit-content-${postId}`).value.trim();
-      const fileInput = document.getElementById(`edit-files-${postId}`);
-      const submitBtn = document.getElementById(`edit-submit-btn-${postId}`);
-
-      if (!title || !content) {
-        alert("제목과 내용을 모두 입력해주세요.");
-        return;
-      }
-
-      submitBtn.disabled = true;
-      submitBtn.innerText = "저장 중...";
-
-      try {
-        let existingAttachments = parseAttachments(post.image_url);
-        const files = fileInput && fileInput.files ? Array.from(fileInput.files) : [];
-
-        if (files.length > 0) {
-          const newAttachments = await uploadFilesToStorage(files, 'files', 'post');
-          existingAttachments = [...existingAttachments, ...newAttachments];
-        }
-
-        const imageUrlValue = existingAttachments.length > 0 ? JSON.stringify(existingAttachments) : null;
-
-        const { error } = await supabaseClient
-          .from('posts')
-          .update({ category: category, title: title, content: content, image_url: imageUrlValue })
-          .eq('id', postId);
-
-        if (error) {
-          alert("수정 실패: " + error.message);
-          submitBtn.disabled = false;
-          submitBtn.innerText = "저장";
-        } else {
-          alert("성공적으로 수정되었습니다!");
-          loadPostsForAutocomplete();
-          loadPosts(); 
-        }
-      } catch (e) {
-        alert("수정 중 오류 발생: " + e.message);
-        submitBtn.disabled = false;
-        submitBtn.innerText = "저장";
-      }
     }
   </script>
 </body>
