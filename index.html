@@ -129,12 +129,12 @@
   </footer>
 
   <script>
+    // 🔥 독서노트를 제외한 깔끔한 4가지 카테고리 구성
     const SITE_CONFIGS = {
       withkeke: {
         siteId: 'withkeke',
         title: "🐶 케케와 함께",
         categories: [
-          { id: 'reading_pages', label: '📖 독서노트' },
           { id: 'travel', label: '✈️ 여행' },
           { id: 'daily', label: '☕ 일상' },
           { id: 'food', label: '🍽️ 맛집' },
@@ -485,7 +485,7 @@
       }
     }
 
-    // 🔥 카테고리 매칭 오류를 완벽히 해결한 유연한 로드 함수
+    // 🔥 DB에 저장된 reading_pages 등과 각 탭을 완벽하게 연결해주는 로드 함수
     async function loadPosts() {
       const container = document.getElementById('posts-container');
       if (!container) return;
@@ -498,17 +498,14 @@
           .order('created_at', { ascending: false });
 
         if (currentCategory !== 'all') {
-          // 선택한 카테고리에 대응하는 DB 값들을 유연하게 모두 허용합니다.
           if (currentCategory === 'travel') {
             query = query.in('category', ['travel', '여행']);
           } else if (currentCategory === 'daily') {
-            query = query.in('category', ['daily', '일상', '일상생활']);
+            query = query.in('category', ['daily', '일상', '일상생활', 'reading_pages']); // 기존 reading_pages 데이터도 일상/독서노트로 흡수
           } else if (currentCategory === 'food') {
             query = query.in('category', ['food', '맛집', '음식']);
           } else if (currentCategory === 'philosophy') {
             query = query.in('category', ['philosophy', '철학']);
-          } else if (currentCategory === 'reading_pages') {
-            query = query.in('category', ['reading_pages', '독서노트']);
           } else {
             query = query.eq('category', currentCategory);
           }
@@ -523,7 +520,13 @@
           return;
         }
 
-        const categoryLabels = {};
+        const categoryLabels = {
+          travel: '✈️ 여행',
+          daily: '☕ 일상',
+          food: '🍽️ 맛집',
+          philosophy: '🧠 철학',
+          reading_pages: '☕ 일상'
+        };
         currentSiteConfig.categories.forEach(c => { categoryLabels[c.id] = c.label; });
 
         if (!posts || posts.length === 0) {
@@ -567,7 +570,7 @@
 
     function escapeHtml(str) {
       if(!str) return '';
-      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+      return str.replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">").replace(/"/g, """).replace(/'/g, "'");
     }
   </script>
 </body>
