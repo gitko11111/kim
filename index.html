@@ -172,10 +172,19 @@
       }
     };
 
+    // 예전 한글 카테고리 하위 호환성 매핑
+    const LEGACY_CATEGORY_MAP = {
+      'travel': '여행',
+      'daily': '일상',
+      'food': '맛집',
+      'philosophy': '철학',
+      'free': '자유',
+      'notice': '공지'
+    };
+
     let CURRENT_SITE_KEY = 'withkeke';
     const host = window.location.hostname.toLowerCase();
 
-    // 도메인 감지 로직
     if (host.indexOf('oliver') !== -1 || host.indexOf('book') !== -1) {
       CURRENT_SITE_KEY = 'oliver';
     } else if (host.indexOf('newlanguage') !== -1 || host.indexOf('languagestudy') !== -1) {
@@ -375,7 +384,11 @@
 
     async function loadPostsForAutocomplete() {
       try {
-        const siteCatIds = currentSiteConfig.categories.map(c => c.id);
+        let siteCatIds = currentSiteConfig.categories.map(c => c.id);
+        if (CURRENT_SITE_KEY === 'withkeke') {
+          siteCatIds = siteCatIds.concat(['여행', '일상', '맛집', '철학', '자유', '공지']);
+        }
+
         const { data: posts } = await supabaseClient
           .from('posts')
           .select('title')
@@ -383,10 +396,7 @@
           
         if (!posts) return;
 
-        const stopWords = new Set([
-          'sh', 'shu', 'ch', 'th', 'ph', 'wh', 'uh', 'ah', 'oh', 'the', 'and', 'for', 'with', 'this', 'that'
-        ]);
-
+        const stopWords = new Set(['the', 'and', 'for', 'with', 'this', 'that']);
         const wordCounts = {};
 
         posts.forEach(p => {
@@ -396,13 +406,10 @@
           rawWords.forEach(w => {
             let cleanW = w.trim();
             const lowerW = cleanW.toLowerCase();
-
             if (!cleanW || stopWords.has(lowerW)) return;
-
             if (/[가-힣]/.test(cleanW)) {
               cleanW = cleanW.replace(/(에서는|에서|으로|까지|부터|에게|한테|은|는|이|가|의|에|을|를|과|와|도|만|로)$/g, '');
             }
-
             if (cleanW.length >= 2 || /\d+\.\d+/.test(cleanW)) {
               wordCounts[cleanW] = (wordCounts[cleanW] || 0) + 1;
             }
@@ -414,8 +421,7 @@
           if (kw) wordCounts[kw] = (wordCounts[kw] || 0) + 5;
         });
 
-        allSearchKeywordsHistory = Object.keys(wordCounts)
-          .sort((a, b) => wordCounts[b] - wordCounts[a]);
+        allSearchKeywordsHistory = Object.keys(wordCounts).sort((a, b) => wordCounts[b] - wordCounts[a]);
 
       } catch (e) {
         console.error("자동완성 로드 에러:", e);
@@ -503,9 +509,17 @@
           .limit(50);
 
         if (currentCategory !== 'all') {
-          query = query.eq('category', currentCategory);
+          const legacyCat = LEGACY_CATEGORY_MAP[currentCategory];
+          if (legacyCat) {
+            query = query.in('category', [currentCategory, legacyCat]);
+          } else {
+            query = query.eq('category', currentCategory);
+          }
         } else {
-          const siteCatIds = currentSiteConfig.categories.map(c => c.id);
+          let siteCatIds = currentSiteConfig.categories.map(c => c.id);
+          if (CURRENT_SITE_KEY === 'withkeke') {
+            siteCatIds = siteCatIds.concat(['여행', '일상', '맛집', '철학', '자유', '공지']);
+          }
           query = query.in('category', siteCatIds);
         }
 
@@ -545,8 +559,17 @@
         year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
       });
 
+      // 영문 및 한글 카테고리 라벨 매핑 병합
       const categoryLabels = {};
       currentSiteConfig.categories.forEach(c => { categoryLabels[c.id] = c.label; });
+      if (CURRENT_SITE_KEY === 'withkeke') {
+        categoryLabels['여행'] = '✈️ 여행';
+        categoryLabels['일상'] = '☕ 일상';
+        categoryLabels['맛집'] = '🍽️ 맛집';
+        categoryLabels['철학'] = '🤔 철학';
+        categoryLabels['자유'] = '💬 자유';
+        categoryLabels['공지'] = '📢 공지';
+      }
 
       let comments = [];
       try {
@@ -972,10 +995,19 @@
         let query = supabaseClient.from('posts').select('*').order('created_at', { ascending: false });
 
         if (currentCategory !== 'all') {
-          query = query.eq('category', currentCategory);
+          // 탭을 눌렀을 때 새 영문 ID와 예전 한글 ID를 함께 검색
+          const legacyCat = LEGACY_CATEGORY_MAP[currentCategory];
+          if (legacyCat) {
+            query = query.in('category', [currentCategory, legacyCat]);
+          } else {
+            query = query.eq('category', currentCategory);
+          }
         } else {
-          // '전체' 탭일 경우: 현재 사이트(withkeke)의 카테고리만 가져와서 타 게시판(언어공부 등) 글을 필터링함
-          const siteCatIds = currentSiteConfig.categories.map(c => c.id);
+          // '전체' 탭일 때 새 영문 ID들과 예전 한글 ID들을 모두 포함
+          let siteCatIds = currentSiteConfig.categories.map(c => c.id);
+          if (CURRENT_SITE_KEY === 'withkeke') {
+            siteCatIds = siteCatIds.concat(['여행', '일상', '맛집', '철학', '자유', '공지']);
+          }
           query = query.in('category', siteCatIds);
         }
 
@@ -1008,6 +1040,14 @@
 
         const categoryLabels = {};
         currentSiteConfig.categories.forEach(c => { categoryLabels[c.id] = c.label; });
+        if (CURRENT_SITE_KEY === 'withkeke') {
+          categoryLabels['여행'] = '✈️ 여행';
+          categoryLabels['일상'] = '☕ 일상';
+          categoryLabels['맛집'] = '🍽️ 맛집';
+          categoryLabels['철학'] = '🤔 철학';
+          categoryLabels['자유'] = '💬 자유';
+          categoryLabels['공지'] = '📢 공지';
+        }
 
         if (!posts || posts.length === 0) {
           container.innerHTML = `<div class="bg-white p-12 rounded-2xl border text-center text-gray-400">등록된 게시글이 없습니다.</div>`;
@@ -1185,7 +1225,7 @@
 
       let catOptionsHtml = '';
       currentSiteConfig.categories.forEach(cat => {
-        const selected = (cat.id === post.category) ? 'selected' : '';
+        const selected = (cat.id === post.category || LEGACY_CATEGORY_MAP[cat.id] === post.category) ? 'selected' : '';
         catOptionsHtml += `<option value="${cat.id}" ${selected}>${cat.label}</option>`;
       });
 
@@ -1228,12 +1268,12 @@
     }
 
     async function updatePost(postId) {
-      const post = loadedPostsMap[postId];
       const category = document.getElementById(`edit-category-${postId}`).value;
       const title = document.getElementById(`edit-title-${postId}`).value.trim();
       const content = document.getElementById(`edit-content-${postId}`).value.trim();
       const fileInput = document.getElementById(`edit-files-${postId}`);
       const submitBtn = document.getElementById(`edit-submit-btn-${postId}`);
+      const post = loadedPostsMap[postId];
 
       if (!title || !content) {
         alert("제목과 내용을 모두 입력해주세요.");
