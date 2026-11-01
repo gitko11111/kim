@@ -372,11 +372,9 @@
 
     async function loadPostsForAutocomplete() {
       try {
-        const siteCatIds = currentSiteConfig.categories.map(c => c.id);
         const { data: posts } = await supabaseClient
           .from('posts')
-          .select('title')
-          .in('category', siteCatIds);
+          .select('title');
           
         if (!posts) return;
 
@@ -501,9 +499,6 @@
 
         if (currentCategory !== 'all') {
           query = query.eq('category', currentCategory);
-        } else {
-          const siteCatIds = currentSiteConfig.categories.map(c => c.id);
-          query = query.in('category', siteCatIds);
         }
 
         const { data: posts, error } = await query;
@@ -542,7 +537,14 @@
         year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
       });
 
-      const categoryLabels = {};
+      const categoryLabels = {
+        notice: '📢 공지사항',
+        free: '💬 자유 게시판',
+        travel: '✈️ 여행',
+        daily: '☕ 일상',
+        food: '🍽️ 맛집',
+        philosophy: '🤔 철학'
+      };
       currentSiteConfig.categories.forEach(c => { categoryLabels[c.id] = c.label; });
 
       let comments = [];
@@ -968,11 +970,9 @@
       try {
         let query = supabaseClient.from('posts').select('*').order('created_at', { ascending: false });
 
+        // 특정한 카테고리 탭을 선택했을 때만 필터링하고, '전체'일 때는 DB의 모든 글을 불러옴
         if (currentCategory !== 'all') {
           query = query.eq('category', currentCategory);
-        } else {
-          const siteCatIds = currentSiteConfig.categories.map(c => c.id);
-          query = query.in('category', siteCatIds);
         }
 
         if (currentSearchType !== 'date' && currentSearchKeyword) {
@@ -1002,7 +1002,14 @@
           return;
         }
 
-        const categoryLabels = {};
+        const categoryLabels = {
+          notice: '📢 공지사항',
+          free: '💬 자유 게시판',
+          travel: '✈️ 여행',
+          daily: '☕ 일상',
+          food: '🍽️ 맛집',
+          philosophy: '🤔 철학'
+        };
         currentSiteConfig.categories.forEach(c => { categoryLabels[c.id] = c.label; });
 
         if (!posts || posts.length === 0) {
