@@ -172,7 +172,11 @@
       }
     };
 
-    // 예전 한글 카테고리 하위 호환성 매핑
+    // 타 사이트(언어 공부) 카테고리 ID 집합
+    const LANGUAGE_CAT_IDS = new Set([
+      'korean', 'chinese1', 'chinese2', 'english1', 'english2', 'japanese', 'japanese2', 'spanish'
+    ]);
+
     const LEGACY_CATEGORY_MAP = {
       'travel': '여행',
       'daily': '일상',
@@ -384,15 +388,9 @@
 
     async function loadPostsForAutocomplete() {
       try {
-        let siteCatIds = currentSiteConfig.categories.map(c => c.id);
-        if (CURRENT_SITE_KEY === 'withkeke') {
-          siteCatIds = siteCatIds.concat(['여행', '일상', '맛집', '철학', '자유', '공지']);
-        }
-
         const { data: posts } = await supabaseClient
           .from('posts')
-          .select('title')
-          .in('category', siteCatIds);
+          .select('title, category');
           
         if (!posts) return;
 
@@ -400,6 +398,7 @@
         const wordCounts = {};
 
         posts.forEach(p => {
+          if (CURRENT_SITE_KEY === 'withkeke' && LANGUAGE_CAT_IDS.has(p.category)) return;
           if (!p.title) return;
           const rawWords = p.title.split(/\s+/);
 
@@ -505,32 +504,26 @@
           .from('posts')
           .select('*')
           .order('search_count', { ascending: true })
-          .order('created_at', { ascending: false })
-          .limit(50);
+          .order('created_at', { ascending: false });
 
-        if (currentCategory !== 'all') {
-          const legacyCat = LEGACY_CATEGORY_MAP[currentCategory];
-          if (legacyCat) {
-            query = query.in('category', [currentCategory, legacyCat]);
-          } else {
-            query = query.eq('category', currentCategory);
-          }
-        } else {
-          let siteCatIds = currentSiteConfig.categories.map(c => c.id);
-          if (CURRENT_SITE_KEY === 'withkeke') {
-            siteCatIds = siteCatIds.concat(['여행', '일상', '맛집', '철학', '자유', '공지']);
-          }
-          query = query.in('category', siteCatIds);
-        }
-
-        const { data: posts, error } = await query;
+        const { data: rawPosts, error } = await query;
 
         if (error) {
           container.innerHTML = `<div class="bg-white p-8 rounded-2xl border text-center text-red-500">⚠️ 랜덤 검색 실패: ${escapeHtml(error.message)}</div>`;
           return;
         }
 
-        if (!posts || posts.length === 0) {
+        let posts = rawPosts || [];
+        if (CURRENT_SITE_KEY === 'withkeke') {
+          if (currentCategory === 'all') {
+            posts = posts.filter(p => !LANGUAGE_CAT_IDS.has(p.category));
+          } else {
+            const legacyCat = LEGACY_CATEGORY_MAP[currentCategory];
+            posts = posts.filter(p => p.category === currentCategory || (legacyCat && p.category === legacyCat));
+          }
+        }
+
+        if (posts.length === 0) {
           container.innerHTML = `<div class="bg-white p-12 rounded-2xl border text-center text-gray-400">등록된 게시글이 없습니다.</div>`;
           return;
         }
@@ -559,17 +552,21 @@
         year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
       });
 
-      // 영문 및 한글 카테고리 라벨 매핑 병합
-      const categoryLabels = {};
+      const categoryLabels = {
+        'notice': '📢 공지',
+        'free': '💬 자유',
+        'travel': '✈️ 여행',
+        'daily': '☕ 일상',
+        'food': '🍽️ 맛집',
+        'philosophy': '🤔 철학',
+        '여행': '✈️ 여행',
+        '일상': '☕ 일상',
+        '맛집': '🍽️ 맛집',
+        '철학': '🤔 철학',
+        '자유': '💬 자유',
+        '공지': '📢 공지'
+      };
       currentSiteConfig.categories.forEach(c => { categoryLabels[c.id] = c.label; });
-      if (CURRENT_SITE_KEY === 'withkeke') {
-        categoryLabels['여행'] = '✈️ 여행';
-        categoryLabels['일상'] = '☕ 일상';
-        categoryLabels['맛집'] = '🍽️ 맛집';
-        categoryLabels['철학'] = '🤔 철학';
-        categoryLabels['자유'] = '💬 자유';
-        categoryLabels['공지'] = '📢 공지';
-      }
 
       let comments = [];
       try {
@@ -613,7 +610,7 @@
         <article class="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border space-y-4" id="post-article-${post.id}">
           <div class="flex justify-between items-start">
             <span class="inline-block px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-semibold rounded-full">
-              ${categoryLabels[post.category] || post.category}
+              ${categoryLabels[post.category] || post.category || '☕ 일상'}
             </span>
             <div class="flex items-center gap-2">
               <span class="text-xs text-gray-400">${dateStr}</span>
@@ -994,23 +991,6 @@
       try {
         let query = supabaseClient.from('posts').select('*').order('created_at', { ascending: false });
 
-        if (currentCategory !== 'all') {
-          // 탭을 눌렀을 때 새 영문 ID와 예전 한글 ID를 함께 검색
-          const legacyCat = LEGACY_CATEGORY_MAP[currentCategory];
-          if (legacyCat) {
-            query = query.in('category', [currentCategory, legacyCat]);
-          } else {
-            query = query.eq('category', currentCategory);
-          }
-        } else {
-          // '전체' 탭일 때 새 영문 ID들과 예전 한글 ID들을 모두 포함
-          let siteCatIds = currentSiteConfig.categories.map(c => c.id);
-          if (CURRENT_SITE_KEY === 'withkeke') {
-            siteCatIds = siteCatIds.concat(['여행', '일상', '맛집', '철학', '자유', '공지']);
-          }
-          query = query.in('category', siteCatIds);
-        }
-
         if (currentSearchType !== 'date' && currentSearchKeyword) {
           if (currentSearchType === 'all') {
             query = query.or(`title.ilike.%${currentSearchKeyword}%,content.ilike.%${currentSearchKeyword}%`);
@@ -1031,23 +1011,41 @@
                        .lte('created_at', endDate.toISOString());
         }
 
-        const { data: posts, error } = await query;
+        const { data: rawPosts, error } = await query;
 
         if (error) {
           container.innerHTML = `<div class="bg-white p-8 rounded-2xl border text-center text-red-500">⚠️ 불러오기 실패: ${escapeHtml(error.message)}</div>`;
           return;
         }
 
-        const categoryLabels = {};
-        currentSiteConfig.categories.forEach(c => { categoryLabels[c.id] = c.label; });
+        // DB에서 가져온 글들 중 사이트 및 탭에 맞춰 자바스크립트로 자율 필터링
+        let posts = rawPosts || [];
         if (CURRENT_SITE_KEY === 'withkeke') {
-          categoryLabels['여행'] = '✈️ 여행';
-          categoryLabels['일상'] = '☕ 일상';
-          categoryLabels['맛집'] = '🍽️ 맛집';
-          categoryLabels['철학'] = '🤔 철학';
-          categoryLabels['자유'] = '💬 자유';
-          categoryLabels['공지'] = '📢 공지';
+          if (currentCategory === 'all') {
+            // '전체' 탭 선택 시 언어 공부 글만 제외하고 기존 Netlify 작성글 전량 표시
+            posts = posts.filter(p => !LANGUAGE_CAT_IDS.has(p.category));
+          } else {
+            // 특정 카테고리 탭 선택 시 매핑 조건에 따라 필터링
+            const legacyCat = LEGACY_CATEGORY_MAP[currentCategory];
+            posts = posts.filter(p => p.category === currentCategory || (legacyCat && p.category === legacyCat));
+          }
         }
+
+        const categoryLabels = {
+          'notice': '📢 공지',
+          'free': '💬 자유',
+          'travel': '✈️ 여행',
+          'daily': '☕ 일상',
+          'food': '🍽️ 맛집',
+          'philosophy': '🤔 철학',
+          '여행': '✈️ 여행',
+          '일상': '☕ 일상',
+          '맛집': '🍽️ 맛집',
+          '철학': '🤔 철학',
+          '자유': '💬 자유',
+          '공지': '📢 공지'
+        };
+        currentSiteConfig.categories.forEach(c => { categoryLabels[c.id] = c.label; });
 
         if (!posts || posts.length === 0) {
           container.innerHTML = `<div class="bg-white p-12 rounded-2xl border text-center text-gray-400">등록된 게시글이 없습니다.</div>`;
@@ -1099,7 +1097,7 @@
             <article class="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border space-y-4" id="post-article-${post.id}">
               <div class="flex justify-between items-start">
                 <span class="inline-block px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-semibold rounded-full">
-                  ${categoryLabels[post.category] || post.category}
+                  ${categoryLabels[post.category] || post.category || '☕ 일상'}
                 </span>
                 <div class="flex items-center gap-2">
                   <span class="text-xs text-gray-400">${dateStr}</span>
