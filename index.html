@@ -151,7 +151,7 @@
           { id: 'travel', label: '✈️ 여행' },
           { id: 'daily', label: '☕ 일상' },
           { id: 'food', label: '🍽️ 맛집' },
-          { id: 'philosophy', label: '🤔 철학' } // 💡 철학 카테고리 추가됨
+          { id: 'philosophy', label: '🤔 철학' }
         ]
       },
       language: {
@@ -968,7 +968,6 @@
       try {
         let query = supabaseClient.from('posts').select('*').order('created_at', { ascending: false });
 
-        // 카테고리 필터링: '전체' 탭일 때는 현재 사이트 카테고리들만 제한 조회
         if (currentCategory !== 'all') {
           query = query.eq('category', currentCategory);
         } else {
