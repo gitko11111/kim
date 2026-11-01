@@ -151,7 +151,9 @@
           { id: 'travel', label: '✈️ 여행' },
           { id: 'daily', label: '☕ 일상' },
           { id: 'food', label: '🍽️ 맛집' },
-          { id: 'philosophy', label: '🤔 철학' }
+          { id: 'philosophy', label: '🤔 철학' },
+          { id: 'free', label: '💬 자유' },
+          { id: 'notice', label: '📢 공지' }
         ]
       },
       language: {
@@ -173,10 +175,8 @@
     let CURRENT_SITE_KEY = 'withkeke';
     const host = window.location.hostname.toLowerCase();
 
-    // 💡 도메인 판별 로직 수정: withkeke 또는 keke 키워드를 최우선 처리
-    if (host.indexOf('withkeke') !== -1 || host.indexOf('keke') !== -1) {
-      CURRENT_SITE_KEY = 'withkeke';
-    } else if (host.indexOf('oliver') !== -1 || host.indexOf('book') !== -1) {
+    // 도메인 감지 로직
+    if (host.indexOf('oliver') !== -1 || host.indexOf('book') !== -1) {
       CURRENT_SITE_KEY = 'oliver';
     } else if (host.indexOf('newlanguage') !== -1 || host.indexOf('languagestudy') !== -1) {
       CURRENT_SITE_KEY = 'language';
@@ -375,9 +375,11 @@
 
     async function loadPostsForAutocomplete() {
       try {
+        const siteCatIds = currentSiteConfig.categories.map(c => c.id);
         const { data: posts } = await supabaseClient
           .from('posts')
-          .select('title');
+          .select('title')
+          .in('category', siteCatIds);
           
         if (!posts) return;
 
@@ -502,6 +504,9 @@
 
         if (currentCategory !== 'all') {
           query = query.eq('category', currentCategory);
+        } else {
+          const siteCatIds = currentSiteConfig.categories.map(c => c.id);
+          query = query.in('category', siteCatIds);
         }
 
         const { data: posts, error } = await query;
@@ -540,14 +545,7 @@
         year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
       });
 
-      const categoryLabels = {
-        notice: '📢 공지사항',
-        free: '💬 자유 게시판',
-        travel: '✈️ 여행',
-        daily: '☕ 일상',
-        food: '🍽️ 맛집',
-        philosophy: '🤔 철학'
-      };
+      const categoryLabels = {};
       currentSiteConfig.categories.forEach(c => { categoryLabels[c.id] = c.label; });
 
       let comments = [];
@@ -975,6 +973,10 @@
 
         if (currentCategory !== 'all') {
           query = query.eq('category', currentCategory);
+        } else {
+          // '전체' 탭일 경우: 현재 사이트(withkeke)의 카테고리만 가져와서 타 게시판(언어공부 등) 글을 필터링함
+          const siteCatIds = currentSiteConfig.categories.map(c => c.id);
+          query = query.in('category', siteCatIds);
         }
 
         if (currentSearchType !== 'date' && currentSearchKeyword) {
@@ -1004,14 +1006,7 @@
           return;
         }
 
-        const categoryLabels = {
-          notice: '📢 공지사항',
-          free: '💬 자유 게시판',
-          travel: '✈️ 여행',
-          daily: '☕ 일상',
-          food: '🍽️ 맛집',
-          philosophy: '🤔 철학'
-        };
+        const categoryLabels = {};
         currentSiteConfig.categories.forEach(c => { categoryLabels[c.id] = c.label; });
 
         if (!posts || posts.length === 0) {
