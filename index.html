@@ -173,9 +173,12 @@
     let CURRENT_SITE_KEY = 'withkeke';
     const host = window.location.hostname.toLowerCase();
 
-    if (host.indexOf('oliver') !== -1 || host.indexOf('book') !== -1) {
+    // 💡 도메인 판별 로직 수정: withkeke 또는 keke 키워드를 최우선 처리
+    if (host.indexOf('withkeke') !== -1 || host.indexOf('keke') !== -1) {
+      CURRENT_SITE_KEY = 'withkeke';
+    } else if (host.indexOf('oliver') !== -1 || host.indexOf('book') !== -1) {
       CURRENT_SITE_KEY = 'oliver';
-    } else if (host.indexOf('language') !== -1) {
+    } else if (host.indexOf('newlanguage') !== -1 || host.indexOf('languagestudy') !== -1) {
       CURRENT_SITE_KEY = 'language';
     } else {
       CURRENT_SITE_KEY = 'withkeke';
@@ -970,7 +973,6 @@
       try {
         let query = supabaseClient.from('posts').select('*').order('created_at', { ascending: false });
 
-        // 특정한 카테고리 탭을 선택했을 때만 필터링하고, '전체'일 때는 DB의 모든 글을 불러옴
         if (currentCategory !== 'all') {
           query = query.eq('category', currentCategory);
         }
