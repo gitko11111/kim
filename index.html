@@ -152,6 +152,7 @@
           { id: 'daily', label: '☕ 일상' },
           { id: 'food', label: '🍽️ 맛집' },
           { id: 'philosophy', label: '🤔 철학' },
+          { id: 'reading_pages', label: '📖 독서/기록' },
           { id: 'free', label: '💬 자유' },
           { id: 'notice', label: '📢 공지' }
         ]
@@ -172,7 +173,6 @@
       }
     };
 
-    // 타 사이트(언어 공부) 카테고리 ID 집합
     const LANGUAGE_CAT_IDS = new Set([
       'korean', 'chinese1', 'chinese2', 'english1', 'english2', 'japanese', 'japanese2', 'spanish'
     ]);
@@ -199,8 +199,10 @@
 
     const currentSiteConfig = SITE_CONFIGS[CURRENT_SITE_KEY];
 
-    let rawUrl = "https://rxuodtvhhqfcyuypygba.supabase.co";
-    let rawKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4dW9kdHZoaHFmY3l1eXB5Z2JhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1Mjk3NjcsImV4cCI6MjEwNzEwNTc2N30.OmY435tnNVJtPlhjA2ilJKF-snA85Rm34_SUwgE0AoU";
+    // 💡 tspmpdtslcnozbbkhirs 프로젝트 주소 적용
+    let rawUrl = "https://tspmpdtslcnozbbkhirs.supabase.co";
+    // ⚠️ tspmpdtslcnozbbkhirs 프로젝트의 anon public key를 여기에 입력해주세요.
+    let rawKey = "YOUR_TSPMPDTSLCNOZBBKHIRS_ANON_KEY_HERE";
 
     let supabaseClient = null;
     try {
@@ -559,6 +561,7 @@
         'daily': '☕ 일상',
         'food': '🍽️ 맛집',
         'philosophy': '🤔 철학',
+        'reading_pages': '📖 독서/기록',
         '여행': '✈️ 여행',
         '일상': '☕ 일상',
         '맛집': '🍽️ 맛집',
@@ -1018,14 +1021,11 @@
           return;
         }
 
-        // DB에서 가져온 글들 중 사이트 및 탭에 맞춰 자바스크립트로 자율 필터링
         let posts = rawPosts || [];
         if (CURRENT_SITE_KEY === 'withkeke') {
           if (currentCategory === 'all') {
-            // '전체' 탭 선택 시 언어 공부 글만 제외하고 기존 Netlify 작성글 전량 표시
             posts = posts.filter(p => !LANGUAGE_CAT_IDS.has(p.category));
           } else {
-            // 특정 카테고리 탭 선택 시 매핑 조건에 따라 필터링
             const legacyCat = LEGACY_CATEGORY_MAP[currentCategory];
             posts = posts.filter(p => p.category === currentCategory || (legacyCat && p.category === legacyCat));
           }
@@ -1038,6 +1038,7 @@
           'daily': '☕ 일상',
           'food': '🍽️ 맛집',
           'philosophy': '🤔 철학',
+          'reading_pages': '📖 독서/기록',
           '여행': '✈️ 여행',
           '일상': '☕ 일상',
           '맛집': '🍽️ 맛집',
