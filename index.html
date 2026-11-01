@@ -182,6 +182,14 @@
       'notice': '공지'
     };
 
+    const LANGUAGE_CAT_SET = new Set([
+      'korean', 'chinese1', 'chinese2', 'english1', 'english2', 'japanese', 'japanese2', 'spanish',
+      '한국어', '중국어 1', '중국어1', '중국어 2', '중국어2', '영어 1', '영어1', '영어 2', '영어2', '일본어', '일본어 1', '일본어 2', '스페인어'
+    ]);
+    const OLIVER_CAT_SET = new Set([
+      'book_review', 'korean_lit', '책 감상/토론', '한국 문학'
+    ]);
+
     let CURRENT_SITE_KEY = 'withkeke';
     const host = window.location.hostname.toLowerCase();
 
@@ -195,8 +203,17 @@
 
     const currentSiteConfig = SITE_CONFIGS[CURRENT_SITE_KEY];
 
-	let rawUrl = "https://tspmpdtslcnozbbkhirs.supabase.co";
-	let rawKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4dW9kdHZoaHFmY3l1eXB5Z2JhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1Mjk3NjcsImV4cCI6MjEwNzEwNTc2N30.OmY435tnNVJtPlhjA2ilJKF-snA85Rm34_SUwgE0AoU";
+    // site_id가 없거나 잘못 지정된 옛날 글도 카테고리로 자동 자동 분류하는 로직
+    function getEffectiveSiteId(post) {
+      if (LANGUAGE_CAT_SET.has(post.category)) return 'language';
+      if (OLIVER_CAT_SET.has(post.category)) return 'oliver';
+      if (post.site_id) return post.site_id;
+      return 'withkeke';
+    }
+
+    // rxuodtvhhqfcyuypgba 프로젝트 주소와 키로 일치화 완료
+    let rawUrl = "https://rxuodtvhhqfcyuypgba.supabase.co";
+    let rawKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4dW9kdHZoaHFmY3l1eXB5Z2JhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1Mjk3NjcsImV4cCI6MjEwNzEwNTc2N30.OmY435tnNVJtPlhjA2ilJKF-snA85Rm34_SUwgE0AoU";
 
     let supabaseClient = null;
     try {
@@ -394,8 +411,7 @@
         const wordCounts = {};
 
         posts.forEach(p => {
-          const postSite = p.site_id || 'withkeke';
-          if (postSite !== CURRENT_SITE_KEY) return;
+          if (getEffectiveSiteId(p) !== CURRENT_SITE_KEY) return;
           if (!p.title) return;
 
           const rawWords = p.title.split(/\s+/);
@@ -512,8 +528,8 @@
 
         let posts = rawPosts || [];
         
-        // 1. site_id 기반 분리
-        posts = posts.filter(p => (p.site_id || 'withkeke') === CURRENT_SITE_KEY);
+        // 1. site_id 기반 스마트 분류
+        posts = posts.filter(p => getEffectiveSiteId(p) === CURRENT_SITE_KEY);
 
         // 2. 선택된 카테고리 필터
         if (currentCategory !== 'all') {
@@ -1005,8 +1021,8 @@
 
         let posts = rawPosts || [];
         
-        // 1. site_id 기반 분리 (site_id가 없으면 withkeke 기본 적용)
-        posts = posts.filter(p => (p.site_id || 'withkeke') === CURRENT_SITE_KEY);
+        // 1. site_id 스마트 분리
+        posts = posts.filter(p => getEffectiveSiteId(p) === CURRENT_SITE_KEY);
 
         // 2. 카테고리 필터링
         if (currentCategory !== 'all') {
