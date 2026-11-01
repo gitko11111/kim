@@ -150,7 +150,8 @@
         categories: [
           { id: 'travel', label: '✈️ 여행' },
           { id: 'daily', label: '☕ 일상' },
-          { id: 'food', label: '🍽️ 맛집' }
+          { id: 'food', label: '🍽️ 맛집' },
+          { id: 'philosophy', label: '🤔 철학' } // 💡 철학 카테고리 추가됨
         ]
       },
       language: {
@@ -169,7 +170,6 @@
       }
     };
 
-    // 💡 기본값을 'withkeke'로 설정하여 케케 게시판이 기본으로 뜨게 수정
     let CURRENT_SITE_KEY = 'withkeke';
     const host = window.location.hostname.toLowerCase();
 
@@ -372,7 +372,12 @@
 
     async function loadPostsForAutocomplete() {
       try {
-        const { data: posts } = await supabaseClient.from('posts').select('title');
+        const siteCatIds = currentSiteConfig.categories.map(c => c.id);
+        const { data: posts } = await supabaseClient
+          .from('posts')
+          .select('title')
+          .in('category', siteCatIds);
+          
         if (!posts) return;
 
         const stopWords = new Set([
@@ -496,6 +501,9 @@
 
         if (currentCategory !== 'all') {
           query = query.eq('category', currentCategory);
+        } else {
+          const siteCatIds = currentSiteConfig.categories.map(c => c.id);
+          query = query.in('category', siteCatIds);
         }
 
         const { data: posts, error } = await query;
@@ -960,8 +968,12 @@
       try {
         let query = supabaseClient.from('posts').select('*').order('created_at', { ascending: false });
 
+        // 카테고리 필터링: '전체' 탭일 때는 현재 사이트 카테고리들만 제한 조회
         if (currentCategory !== 'all') {
           query = query.eq('category', currentCategory);
+        } else {
+          const siteCatIds = currentSiteConfig.categories.map(c => c.id);
+          query = query.in('category', siteCatIds);
         }
 
         if (currentSearchType !== 'date' && currentSearchKeyword) {
