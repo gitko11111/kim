@@ -199,6 +199,7 @@
 
     const currentSiteConfig = SITE_CONFIGS[CURRENT_SITE_KEY];
 
+    // 보안상 실제 키는 .env 등으로 관리하는 것을 권장합니다.
 	let rawUrl = "https://tspmpdtslcnozbbkhirs.supabase.co";
 	let rawKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzcG1wZHRzbGNub3piYmtoaXJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1Mjk5MTgsImV4cCI6MjEwNzEwNTkxOH0.xdbGu0_fRPUIBbn-kH-hXC8vQhgChy4xy8M6TkomhDw";
 
@@ -396,9 +397,20 @@
 
         const stopWords = new Set(['the', 'and', 'for', 'with', 'this', 'that']);
         const wordCounts = {};
+        
+        // 현재 사이트에 설정된 카테고리만 자동완성에 반영하도록 필터 강화
+        const validIds = currentSiteConfig.categories.map(c => c.id);
 
         posts.forEach(p => {
-          if (CURRENT_SITE_KEY === 'withkeke' && LANGUAGE_CAT_IDS.has(p.category)) return;
+          let isValid = validIds.includes(p.category);
+          // 레거시 카테고리 매핑 체크 (예: '일상' -> 'daily')
+          if (!isValid) {
+            const legacyKey = Object.keys(LEGACY_CATEGORY_MAP).find(key => LEGACY_CATEGORY_MAP[key] === p.category);
+            if (legacyKey && validIds.includes(legacyKey)) isValid = true;
+          }
+          
+          if (!isValid) return; // 현재 게시판과 관계없는 글은 제외
+
           if (!p.title) return;
           const rawWords = p.title.split(/\s+/);
 
@@ -514,13 +526,18 @@
         }
 
         let posts = rawPosts || [];
-        if (CURRENT_SITE_KEY === 'withkeke') {
-          if (currentCategory === 'all') {
-            posts = posts.filter(p => !LANGUAGE_CAT_IDS.has(p.category));
-          } else {
-            const legacyCat = LEGACY_CATEGORY_MAP[currentCategory];
-            posts = posts.filter(p => p.category === currentCategory || (legacyCat && p.category === legacyCat));
-          }
+        const validIds = currentSiteConfig.categories.map(c => c.id);
+
+        if (currentCategory === 'all') {
+          posts = posts.filter(p => {
+            if (validIds.includes(p.category)) return true;
+            const legacyKey = Object.keys(LEGACY_CATEGORY_MAP).find(key => LEGACY_CATEGORY_MAP[key] === p.category);
+            if (legacyKey && validIds.includes(legacyKey)) return true;
+            return false;
+          });
+        } else {
+          const legacyCat = LEGACY_CATEGORY_MAP[currentCategory];
+          posts = posts.filter(p => p.category === currentCategory || (legacyCat && p.category === legacyCat));
         }
 
         if (posts.length === 0) {
@@ -1020,13 +1037,18 @@
         }
 
         let posts = rawPosts || [];
-        if (CURRENT_SITE_KEY === 'withkeke') {
-          if (currentCategory === 'all') {
-            posts = posts.filter(p => !LANGUAGE_CAT_IDS.has(p.category));
-          } else {
-            const legacyCat = LEGACY_CATEGORY_MAP[currentCategory];
-            posts = posts.filter(p => p.category === currentCategory || (legacyCat && p.category === legacyCat));
-          }
+        const validIds = currentSiteConfig.categories.map(c => c.id);
+
+        if (currentCategory === 'all') {
+          posts = posts.filter(p => {
+            if (validIds.includes(p.category)) return true;
+            const legacyKey = Object.keys(LEGACY_CATEGORY_MAP).find(key => LEGACY_CATEGORY_MAP[key] === p.category);
+            if (legacyKey && validIds.includes(legacyKey)) return true;
+            return false;
+          });
+        } else {
+          const legacyCat = LEGACY_CATEGORY_MAP[currentCategory];
+          posts = posts.filter(p => p.category === currentCategory || (legacyCat && p.category === legacyCat));
         }
 
         const categoryLabels = {
