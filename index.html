@@ -173,16 +173,13 @@
       }
     };
 
-    // 과거 데이터베이스에 한글(또는 띄어쓰기 등)로 남아있는 카테고리를 현재 ID로 매핑
-    const CATEGORY_NORMALIZER = {
-      '여행': 'travel', '일상': 'daily', '맛집': 'food', '철학': 'philosophy', 
-      '독서/기록': 'reading_pages', '독서': 'reading_pages', '기록': 'reading_pages',
-      '자유': 'free', '공지': 'notice', '공지사항': 'notice',
-      '책 감상/토론': 'book_review', '책 감상': 'book_review', '토론': 'book_review', '한국 문학': 'korean_lit',
-      '한국어': 'korean', '중국어 1': 'chinese1', '중국어1': 'chinese1', '중국어 2': 'chinese2', '중국어2': 'chinese2',
-      '영어 1': 'english1', '영어1': 'english1', '영어 2': 'english2', '영어2': 'english2',
-      '일본어': 'japanese', '일본어 1': 'japanese', '일본어1': 'japanese', '일본어 2': 'japanese2', '일본어2': 'japanese2',
-      '스페인어': 'spanish'
+    const LEGACY_CATEGORY_MAP = {
+      'travel': '여행',
+      'daily': '일상',
+      'food': '맛집',
+      'philosophy': '철학',
+      'free': '자유',
+      'notice': '공지'
     };
 
     let CURRENT_SITE_KEY = 'withkeke';
@@ -198,46 +195,6 @@
 
     const currentSiteConfig = SITE_CONFIGS[CURRENT_SITE_KEY];
 
-    // 현재 접속 중인 사이트에 노출해도 되는 글인지 판단하는 로직
-    function isPostForCurrentSite(postCategory, currentSiteKey) {
-      if (!postCategory) return currentSiteKey === 'withkeke'; // 빈 카테고리는 메인 사이트에서 품음
-      
-      const normalizedId = CATEGORY_NORMALIZER[postCategory] || postCategory;
-      const validIds = SITE_CONFIGS[currentSiteKey].categories.map(c => c.id);
-      
-      // 1. 현재 사이트의 ID나 이름과 일치하면 노출
-      if (validIds.includes(normalizedId)) return true;
-      if (SITE_CONFIGS[currentSiteKey].categories.some(c => c.label === postCategory)) return true;
-      
-      // 2. 다른 사이트의 고유 카테고리인지 확인
-      const isOtherSiteCategory = Object.keys(SITE_CONFIGS).some(siteKey => {
-        if (siteKey === currentSiteKey) return false;
-        return SITE_CONFIGS[siteKey].categories.map(c => c.id).includes(normalizedId);
-      });
-      
-      // 3. 타 사이트용이 아닌 미확인 과거 데이터는 메인 사이트(withkeke)에서 복원 노출
-      if (!isOtherSiteCategory && currentSiteKey === 'withkeke') {
-        return true;
-      }
-      return false;
-    }
-
-    // 뱃지에 예쁜 라벨을 달아주기 위한 함수
-    function getCategoryBadgeLabel(rawCategory) {
-      if (!rawCategory) return '☕ 일상'; // 기본값
-      const normalizedId = CATEGORY_NORMALIZER[rawCategory] || rawCategory;
-      
-      let currentCat = currentSiteConfig.categories.find(c => c.id === normalizedId || c.label === rawCategory);
-      if (currentCat) return currentCat.label;
-      
-      for (const site of Object.values(SITE_CONFIGS)) {
-        let found = site.categories.find(c => c.id === normalizedId || c.label === rawCategory);
-        if (found) return found.label;
-      }
-      return rawCategory;
-    }
-
-    // 보안상 실제 키는 .env 등으로 관리하는 것을 권장합니다.
 	let rawUrl = "https://tspmpdtslcnozbbkhirs.supabase.co";
 	let rawKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzcG1wZHRzbGNub3piYmtoaXJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1Mjk5MTgsImV4cCI6MjEwNzEwNTkxOH0.xdbGu0_fRPUIBbn-kH-hXC8vQhgChy4xy8M6TkomhDw";
 
@@ -429,7 +386,7 @@
       try {
         const { data: posts } = await supabaseClient
           .from('posts')
-          .select('title, category');
+          .select('title, category, site_id');
           
         if (!posts) return;
 
@@ -437,10 +394,11 @@
         const wordCounts = {};
 
         posts.forEach(p => {
-          if (!isPostForCurrentSite(p.category, CURRENT_SITE_KEY)) return;
+          const postSite = p.site_id || 'withkeke';
+          if (postSite !== CURRENT_SITE_KEY) return;
           if (!p.title) return;
-          const rawWords = p.title.split(/\s+/);
 
+          const rawWords = p.title.split(/\s+/);
           rawWords.forEach(w => {
             let cleanW = w.trim();
             const lowerW = cleanW.toLowerCase();
@@ -554,13 +512,13 @@
 
         let posts = rawPosts || [];
         
-        if (currentCategory === 'all') {
-          posts = posts.filter(p => isPostForCurrentSite(p.category, CURRENT_SITE_KEY));
-        } else {
-          posts = posts.filter(p => {
-             const normalizedId = CATEGORY_NORMALIZER[p.category] || p.category;
-             return normalizedId === currentCategory;
-          });
+        // 1. site_id 기반 분리
+        posts = posts.filter(p => (p.site_id || 'withkeke') === CURRENT_SITE_KEY);
+
+        // 2. 선택된 카테고리 필터
+        if (currentCategory !== 'all') {
+          const legacyCat = LEGACY_CATEGORY_MAP[currentCategory];
+          posts = posts.filter(p => p.category === currentCategory || (legacyCat && p.category === legacyCat));
         }
 
         if (posts.length === 0) {
@@ -592,7 +550,8 @@
         year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
       });
 
-      const finalBadge = getCategoryBadgeLabel(post.category);
+      const categoryLabels = {};
+      currentSiteConfig.categories.forEach(c => { categoryLabels[c.id] = c.label; });
 
       let comments = [];
       try {
@@ -636,7 +595,7 @@
         <article class="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border space-y-4" id="post-article-${post.id}">
           <div class="flex justify-between items-start">
             <span class="inline-block px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-semibold rounded-full">
-              ${finalBadge}
+              ${categoryLabels[post.category] || post.category || '☕ 일상'}
             </span>
             <div class="flex items-center gap-2">
               <span class="text-xs text-gray-400">${dateStr}</span>
@@ -990,7 +949,7 @@
 
         const { error: dbError } = await supabaseClient
           .from('posts')
-          .insert([{ category, title, content, image_url: imageUrlValue }]);
+          .insert([{ site_id: CURRENT_SITE_KEY, category, title, content, image_url: imageUrlValue }]);
 
         if (dbError) {
           alert("글 저장 실패: " + dbError.message);
@@ -1046,14 +1005,17 @@
 
         let posts = rawPosts || [];
         
-        if (currentCategory === 'all') {
-          posts = posts.filter(p => isPostForCurrentSite(p.category, CURRENT_SITE_KEY));
-        } else {
-          posts = posts.filter(p => {
-             const normalizedId = CATEGORY_NORMALIZER[p.category] || p.category;
-             return normalizedId === currentCategory;
-          });
+        // 1. site_id 기반 분리 (site_id가 없으면 withkeke 기본 적용)
+        posts = posts.filter(p => (p.site_id || 'withkeke') === CURRENT_SITE_KEY);
+
+        // 2. 카테고리 필터링
+        if (currentCategory !== 'all') {
+          const legacyCat = LEGACY_CATEGORY_MAP[currentCategory];
+          posts = posts.filter(p => p.category === currentCategory || (legacyCat && p.category === legacyCat));
         }
+
+        const categoryLabels = {};
+        currentSiteConfig.categories.forEach(c => { categoryLabels[c.id] = c.label; });
 
         if (!posts || posts.length === 0) {
           container.innerHTML = `<div class="bg-white p-12 rounded-2xl border text-center text-gray-400">등록된 게시글이 없습니다.</div>`;
@@ -1066,8 +1028,6 @@
           const dateStr = new Date(post.created_at).toLocaleString('ko-KR', {
             year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
           });
-          
-          const finalBadge = getCategoryBadgeLabel(post.category);
 
           let comments = [];
           try {
@@ -1107,7 +1067,7 @@
             <article class="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border space-y-4" id="post-article-${post.id}">
               <div class="flex justify-between items-start">
                 <span class="inline-block px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-semibold rounded-full">
-                  ${finalBadge}
+                  ${categoryLabels[post.category] || post.category || '☕ 일상'}
                 </span>
                 <div class="flex items-center gap-2">
                   <span class="text-xs text-gray-400">${dateStr}</span>
@@ -1233,8 +1193,7 @@
 
       let catOptionsHtml = '';
       currentSiteConfig.categories.forEach(cat => {
-        const normalizedPostCat = CATEGORY_NORMALIZER[post.category] || post.category;
-        const selected = (cat.id === normalizedPostCat) ? 'selected' : '';
+        const selected = (cat.id === post.category || LEGACY_CATEGORY_MAP[cat.id] === post.category) ? 'selected' : '';
         catOptionsHtml += `<option value="${cat.id}" ${selected}>${cat.label}</option>`;
       });
 
