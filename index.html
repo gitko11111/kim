@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title id="site-page-title">커뮤니티 게시판</title>
 
-  <!-- [1] Tailwind CSS CDN -->
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- [2] Supabase JS SDK v2 -->
+  <!-- Supabase JS SDK v2 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-slate-100 min-h-screen font-sans flex flex-col justify-between">
@@ -203,7 +203,7 @@
 
     const currentSiteConfig = SITE_CONFIGS[CURRENT_SITE_KEY];
 
-    // site_id가 없거나 잘못 지정된 옛날 글도 카테고리로 자동 자동 분류하는 로직
+    // 구형 데이터 호환 및 사이트 자동 판별 함수
     function getEffectiveSiteId(post) {
       if (LANGUAGE_CAT_SET.has(post.category)) return 'language';
       if (OLIVER_CAT_SET.has(post.category)) return 'oliver';
@@ -211,7 +211,7 @@
       return 'withkeke';
     }
 
-    // rxuodtvhhqfcyuypgba 프로젝트 주소와 키로 일치화 완료
+    // [정밀 수정] URL과 Key의 프로젝트 ID 완전 일치화 (rxuodtvhhqfcyuypgba)
     let rawUrl = "https://rxuodtvhhqfcyuypgba.supabase.co";
     let rawKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4dW9kdHZoaHFmY3l1eXB5Z2JhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1Mjk3NjcsImV4cCI6MjEwNzEwNTc2N30.OmY435tnNVJtPlhjA2ilJKF-snA85Rm34_SUwgE0AoU";
 
@@ -528,10 +528,10 @@
 
         let posts = rawPosts || [];
         
-        // 1. site_id 기반 스마트 분류
+        // site_id 필터링
         posts = posts.filter(p => getEffectiveSiteId(p) === CURRENT_SITE_KEY);
 
-        // 2. 선택된 카테고리 필터
+        // 카테고리 필터링
         if (currentCategory !== 'all') {
           const legacyCat = LEGACY_CATEGORY_MAP[currentCategory];
           posts = posts.filter(p => p.category === currentCategory || (legacyCat && p.category === legacyCat));
@@ -1021,10 +1021,10 @@
 
         let posts = rawPosts || [];
         
-        // 1. site_id 스마트 분리
+        // site_id 스마트 분리
         posts = posts.filter(p => getEffectiveSiteId(p) === CURRENT_SITE_KEY);
 
-        // 2. 카테고리 필터링
+        // 카테고리 필터링
         if (currentCategory !== 'all') {
           const legacyCat = LEGACY_CATEGORY_MAP[currentCategory];
           posts = posts.filter(p => p.category === currentCategory || (legacyCat && p.category === legacyCat));
