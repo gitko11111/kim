@@ -212,8 +212,11 @@
     }
 
     // [정밀 수정] URL과 Key의 프로젝트 ID 완전 일치화 (rxuodtvhhqfcyuypgba)
-let rawUrl = "https://rxuodtvhhqfcyuypgba.supabase.co";
+
+let rawUrl = "https://rxuodtvhhqfcyuypygba.supabase.co";
 let rawKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4dW9kdHZoaHFmY3l1eXB5Z2JhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1Mjk3NjcsImV4cCI6MjEwNzEwNTc2N30.OmY435tnNVJtPlhjA2ilJKF-snA85Rm34_SUwgE0AoU";
+
+
     let supabaseClient = null;
     try {
       supabaseClient = supabase.createClient(rawUrl, rawKey);
