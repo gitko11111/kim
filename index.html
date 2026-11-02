@@ -73,7 +73,6 @@
         <textarea id="post-content" rows="3" placeholder="내용을 입력하세요..." class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
       </div>
 
-      <!-- 다중 파일 첨부 -->
       <div>
         <label class="block text-xs font-semibold text-gray-600 mb-1">
           📎 파일 첨부 (사진 자동 용량 축소, 음악, 동영상, PDF 등 다중 선택 가능)
@@ -133,20 +132,14 @@
   </footer>
 
   <script>
+    // [사이트별 독립 DB 및 설정 분리]
     const SITE_CONFIGS = {
-      oliver: {
-        siteId: 'oliver',
-        title: "📚 독서회 커뮤니티",
-        categories: [
-          { id: 'notice', label: '📢 공지사항' },
-          { id: 'book_review', label: '📖 책 감상/토론' },
-          { id: 'korean_lit', label: '🇰🇷 한국 문학' },
-          { id: 'free', label: '💬 자유 게시판' }
-        ]
-      },
       withkeke: {
         siteId: 'withkeke',
         title: "🐶 케케와 함께",
+        // With Keke 전용 Supabase 주소 및 키 (필요시 With Keke 대시보드의 키로 변경)
+        rawUrl: "https://tspmpdtslcnozbbkhirs.supabase.co", 
+        rawKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzcG1wZHRzbGNub3piYmtoaXJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1Mjk5MTgsImV4cCI6MjEwNzEwNTkxOH0.xdbGu0_fRPUIBbn-kH-hXC8vQhgChy4xy8M6TkomhDw",
         categories: [
           { id: 'travel', label: '✈️ 여행' },
           { id: 'daily', label: '☕ 일상' },
@@ -160,6 +153,9 @@
       language: {
         siteId: 'language',
         title: "🌐 New Language Study",
+        // New Language Study 전용 Supabase 주소 및 키
+        rawUrl: "https://rxuodtvhhqfcyuypygba.supabase.co",
+        rawKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4dW9kdHZoaHFmY3l1eXB5Z2JhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1Mjk3NjcsImV4cCI6MjEwNzEwNTc2N30.OmY435tnNVJtPlhjA2ilJKF-snA85Rm34_SUwgE0AoU",
         categories: [
           { id: 'korean', label: '🇰🇷 한국어' },
           { id: 'chinese1', label: '🇨🇳 중국어 1' },
@@ -170,25 +166,20 @@
           { id: 'japanese2', label: '🇯🇵 일본어 2' },
           { id: 'spanish', label: '🇪🇸 스페인어' }
         ]
+      },
+      oliver: {
+        siteId: 'oliver',
+        title: "📚 독서회 커뮤니티",
+        rawUrl: "https://rxuodtvhhqfcyuypygba.supabase.co",
+        rawKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4dW9kdHZoaHFmY3l1eXB5Z2JhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1Mjk3NjcsImV4cCI6MjEwNzEwNTc2N30.OmY435tnNVJtPlhjA2ilJKF-snA85Rm34_SUwgE0AoU",
+        categories: [
+          { id: 'notice', label: '📢 공지사항' },
+          { id: 'book_review', label: '📖 책 감상/토론' },
+          { id: 'korean_lit', label: '🇰🇷 한국 문학' },
+          { id: 'free', label: '💬 자유 게시판' }
+        ]
       }
     };
-
-    const LEGACY_CATEGORY_MAP = {
-      'travel': '여행',
-      'daily': '일상',
-      'food': '맛집',
-      'philosophy': '철학',
-      'free': '자유',
-      'notice': '공지'
-    };
-
-    const LANGUAGE_CAT_SET = new Set([
-      'korean', 'chinese1', 'chinese2', 'english1', 'english2', 'japanese', 'japanese2', 'spanish',
-      '한국어', '중국어 1', '중국어1', '중국어 2', '중국어2', '영어 1', '영어1', '영어 2', '영어2', '일본어', '일본어 1', '일본어 2', '스페인어'
-    ]);
-    const OLIVER_CAT_SET = new Set([
-      'book_review', 'korean_lit', '책 감상/토론', '한국 문학'
-    ]);
 
     let CURRENT_SITE_KEY = 'withkeke';
     const host = window.location.hostname.toLowerCase();
@@ -203,23 +194,10 @@
 
     const currentSiteConfig = SITE_CONFIGS[CURRENT_SITE_KEY];
 
-    // 구형 데이터 호환 및 사이트 자동 판별 함수
-    function getEffectiveSiteId(post) {
-      if (LANGUAGE_CAT_SET.has(post.category)) return 'language';
-      if (OLIVER_CAT_SET.has(post.category)) return 'oliver';
-      if (post.site_id) return post.site_id;
-      return 'withkeke';
-    }
-
-    // [정밀 수정] URL과 Key의 프로젝트 ID 완전 일치화 (rxuodtvhhqfcyuypgba)
-
-let rawUrl = "https://rxuodtvhhqfcyuypygba.supabase.co";
-let rawKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4dW9kdHZoaHFmY3l1eXB5Z2JhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1Mjk3NjcsImV4cCI6MjEwNzEwNTc2N30.OmY435tnNVJtPlhjA2ilJKF-snA85Rm34_SUwgE0AoU";
-
-
+    // 접속한 사이트 도메인에 해당하는 독자적 Supabase DB 연결
     let supabaseClient = null;
     try {
-      supabaseClient = supabase.createClient(rawUrl, rawKey);
+      supabaseClient = supabase.createClient(currentSiteConfig.rawUrl, currentSiteConfig.rawKey);
     } catch(e) {
       console.error("Supabase 생성 에러:", e);
     }
@@ -405,7 +383,7 @@ let rawKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
       try {
         const { data: posts } = await supabaseClient
           .from('posts')
-          .select('title, category, site_id');
+          .select('title, category');
           
         if (!posts) return;
 
@@ -413,9 +391,7 @@ let rawKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
         const wordCounts = {};
 
         posts.forEach(p => {
-          if (getEffectiveSiteId(p) !== CURRENT_SITE_KEY) return;
           if (!p.title) return;
-
           const rawWords = p.title.split(/\s+/);
           rawWords.forEach(w => {
             let cleanW = w.trim();
@@ -529,14 +505,8 @@ let rawKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
         }
 
         let posts = rawPosts || [];
-        
-        // site_id 필터링
-        posts = posts.filter(p => getEffectiveSiteId(p) === CURRENT_SITE_KEY);
-
-        // 카테고리 필터링
         if (currentCategory !== 'all') {
-          const legacyCat = LEGACY_CATEGORY_MAP[currentCategory];
-          posts = posts.filter(p => p.category === currentCategory || (legacyCat && p.category === legacyCat));
+          posts = posts.filter(p => p.category === currentCategory);
         }
 
         if (posts.length === 0) {
@@ -967,7 +937,7 @@ let rawKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 
         const { error: dbError } = await supabaseClient
           .from('posts')
-          .insert([{ site_id: CURRENT_SITE_KEY, category, title, content, image_url: imageUrlValue }]);
+          .insert([{ category, title, content, image_url: imageUrlValue }]);
 
         if (dbError) {
           alert("글 저장 실패: " + dbError.message);
@@ -1022,14 +992,8 @@ let rawKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
         }
 
         let posts = rawPosts || [];
-        
-        // site_id 스마트 분리
-        posts = posts.filter(p => getEffectiveSiteId(p) === CURRENT_SITE_KEY);
-
-        // 카테고리 필터링
         if (currentCategory !== 'all') {
-          const legacyCat = LEGACY_CATEGORY_MAP[currentCategory];
-          posts = posts.filter(p => p.category === currentCategory || (legacyCat && p.category === legacyCat));
+          posts = posts.filter(p => p.category === currentCategory);
         }
 
         const categoryLabels = {};
@@ -1211,7 +1175,7 @@ let rawKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 
       let catOptionsHtml = '';
       currentSiteConfig.categories.forEach(cat => {
-        const selected = (cat.id === post.category || LEGACY_CATEGORY_MAP[cat.id] === post.category) ? 'selected' : '';
+        const selected = (cat.id === post.category) ? 'selected' : '';
         catOptionsHtml += `<option value="${cat.id}" ${selected}>${cat.label}</option>`;
       });
 
