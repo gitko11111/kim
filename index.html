@@ -137,6 +137,7 @@
       withkeke: {
         siteId: 'withkeke',
         title: "🐶 케케와 함께",
+        // With Keke 전용 Supabase 주소 및 키 (필요시 With Keke 대시보드의 키로 변경)
         rawUrl: "https://tspmpdtslcnozbbkhirs.supabase.co", 
         rawKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzcG1wZHRzbGNub3piYmtoaXJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1Mjk5MTgsImV4cCI6MjEwNzEwNTkxOH0.xdbGu0_fRPUIBbn-kH-hXC8vQhgChy4xy8M6TkomhDw",
         categories: [
@@ -152,8 +153,9 @@
       language: {
         siteId: 'language',
         title: "🌐 New Language Study",
+        // New Language Study 전용 Supabase 주소 및 키
         rawUrl: "https://rxuodtvhhqfcyuypygba.supabase.co",
-        rawKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzcG1wZHRzbGNub3piYmtoaXJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1Mjk3NjcsImV4cCI6MjEwNzEwNTc2N30.OmY435tnNVJtPlhjA2ilJKF-snA85Rm34_SUwgE0AoU",
+        rawKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4dW9kdHZoaHFmY3l1eXB5Z2JhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1Mjk3NjcsImV4cCI6MjEwNzEwNTc2N30.OmY435tnNVJtPlhjA2ilJKF-snA85Rm34_SUwgE0AoU",
         categories: [
           { id: 'korean', label: '🇰🇷 한국어' },
           { id: 'chinese1', label: '🇨🇳 중국어 1' },
@@ -162,8 +164,7 @@
           { id: 'english2', label: '🇺🇸 영어 2' },
           { id: 'japanese', label: '🇯🇵 일본어 1' },
           { id: 'japanese2', label: '🇯🇵 일본어 2' },
-          { id: 'spanish', label: '🇪🇸 스페인어' },
-          { id: 'philosophy', label: '🤔 철학' }
+          { id: 'spanish', label: '🇪🇸 스페인어' }
         ]
       },
       oliver: {
@@ -193,6 +194,7 @@
 
     const currentSiteConfig = SITE_CONFIGS[CURRENT_SITE_KEY];
 
+    // 접속한 사이트 도메인에 해당하는 독자적 Supabase DB 연결
     let supabaseClient = null;
     try {
       supabaseClient = supabase.createClient(currentSiteConfig.rawUrl, currentSiteConfig.rawKey);
